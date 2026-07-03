@@ -4,3 +4,5 @@ matplotlib==3.8.4
 setuptools<70
 strawberryfields==0.23.0
 thewalrus==0.21.0
+plotly
+nbformat>=4.2.0
