@@ -36,7 +36,7 @@
 
 - $\theta$ determines **which quadrature $\hat{X}_{\theta}$ is squeezed, not the same as the optical phase $\phi$ of the coherent state**. The field of a squeezed vaccuum **does not** have a well defined optical phase
 
-- Squeezing the quadrature $\hat{X}_{\theta}$ results in the anti-squeezing of quadrature $\hat{X}_{\theta + \pi/2}$
+- Squeezing the quadrature $\hat X_{\theta}$ results in the anti-squeezing of quadrature $\hat X_{\theta + \pi/2}$
 
 $$(\Delta \hat{X}_{\theta})^2 \propto e^{-2r}, \quad (\Delta \hat{X}_{\theta + \pi/2})^2 \propto e^{2r} $$
 
