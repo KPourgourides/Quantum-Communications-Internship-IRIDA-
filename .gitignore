@@ -2,3 +2,7 @@ __pycache__/
 *.py[c]
 .ipynb_checkpoints/protocol_testing-checkpoint.ipynb
 .ipynb_checkpoints/sf_implementations-checkpoint.ipynb
+helper_functions/.ipynb_checkpoints/protocols-checkpoint.py
+helper_functions/.ipynb_checkpoints/state_measurement-checkpoint.py
+helper_functions/.ipynb_checkpoints/state_visualizations-checkpoint.py
+papers/.ipynb_checkpoints/Squeezing-enhanced phase-shift-keyed binary communication in noisy channels-checkpoint.pdf
