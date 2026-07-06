@@ -1,2 +1,4 @@
 __pycache__/
 *.py[c]
+.ipynb_checkpoints/protocol_testing-checkpoint.ipynb
+.ipynb_checkpoints/sf_implementations-checkpoint.ipynb
