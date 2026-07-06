@@ -9,6 +9,7 @@
 - Prepare helper functions for state visualisation and measurement in SF  
 - Prepare protocols for coherent functions and displaced squeezed functions in noise-free channel  
 - Visualise the error probability for the aforementioned protocols and compare to theoretical function
+
 ***
 
 ## Progress
