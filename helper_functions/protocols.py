@@ -80,9 +80,17 @@ def P_err_theory(N, beta):
     P_err : float or np.ndarray
     """
 
+    # Same physical parameter split
     alpha = np.sqrt(N * (1 - beta))
+
+    # This Sigma corresponds to quadrature noise std in sqrt(2) convention
     Sigma = 1.0 / (N * beta + np.sqrt(1 + N * beta))
 
-    argument = (2 * alpha) / (np.sqrt(2) * Sigma)
+    # Convert BOTH signal and noise to no-sqrt2 convention
+    alpha_prime = np.sqrt(2) * alpha
+    Sigma_prime = np.sqrt(2) * Sigma
+
+    # SNR argument (note: structure unchanged)
+    argument = (2 * alpha_prime) / (np.sqrt(2) * Sigma_prime)
 
     return 0.5 * erfc(argument)
