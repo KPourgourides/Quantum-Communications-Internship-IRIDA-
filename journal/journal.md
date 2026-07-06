@@ -9,7 +9,7 @@
 - Prepare helper functions for state visualisation and measurement in SF  
 - Prepare protocols for coherent functions and displaced squeezed functions in noise-free channel  
 - Visualise the error probability for the aforementioned protocols and compare to theoretical function
----
+***
 
 ## Progress
 
@@ -33,7 +33,7 @@ In this project we will follow closely the research paper [“Squeezing-enhanced
 - Investigate the influence of key system parameters (e.g. squeezing) on performance  
 - Validate the simulated results against the theoretical predictions of the paper  
 
----
+***
 
 ### Plan to Achieve the Objectives
 
@@ -54,14 +54,14 @@ The theoretical and computational objectives will be developed in parallel so th
 - Theoretical Analysis and Verification  
   Derive the analytical expressions relevant to the project and compare simulated results with the analytical predictions of the reference paper.
 
----
+***
 ### Prepare helper functions for state visualisation and measurement in SF
 
 **State Visualisation:** Created functions that can visualise the Wigner function of a coherent state, squeezed-vacuum or displaced-squeezed vacuum according to user's inputs. The output is just a plot.
 
 **State Measurement:** Created functions that can perform homodyne detection for a coherent state, squeezed-vacuum or displaced-squeezed vaccum according to user's inputs. The output is a single measurement following the statistics of the state.
 
----
+***
 ### Prepare protocols for coherent functions and displaced squeezed functions in noise-free channel  
 
 Homodyne measurements are performed for the exchange of coherent states, which are either prepared as $|\alpha\rangle$ or $|-\alpha\rangle$ with equal probability. For each value of $\alpha$, the measurement process is sampled many times, and the number of incorrectly classified states is recorded to estimate the error probability. This procedure is repeated over a range of values of $\alpha$ to investigate the behaviour of the error probability as a function of the average photon number.
