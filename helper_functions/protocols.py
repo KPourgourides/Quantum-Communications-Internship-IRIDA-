@@ -64,33 +64,25 @@ def perr_dss(N_grid:np.array, beta_grid:np.array, homodyne_angle:float, num_samp
     return p_err
 
 
-def P_err_theory(N, beta):
-    """
-    Theoretical homodyne error probability for DSS states.
+def P_err_theory(N_grid, beta_grid, homodyne_angle):
 
-    Parameters
-    ----------
-    N : float or np.ndarray
-        Total photon number
-    beta : float or np.ndarray
-        Squeezing fraction (0 <= beta <= 1)
+    # ensure arrays
+    N_grid = np.asarray(N_grid)
+    beta_grid = np.asarray(beta_grid)
 
-    Returns
-    -------
-    P_err : float or np.ndarray
-    """
+    # squeezing parameter (vectorized)
+    r = np.arcsinh(np.sqrt(N_grid * beta_grid))
 
-    # Same physical parameter split
-    alpha = np.sqrt(N * (1 - beta))
+    # displacement amplitude
+    alpha = np.sqrt(N_grid * (1 - beta_grid))
 
-    # This Sigma corresponds to quadrature noise std in sqrt(2) convention
-    Sigma = 1.0 / (N * beta + np.sqrt(1 + N * beta))
+    # homodyne mean
+    mu = np.sqrt(2) * alpha * np.cos(homodyne_angle)
 
-    # Convert BOTH signal and noise to no-sqrt2 convention
-    alpha_prime = np.sqrt(2) * alpha
-    Sigma_prime = np.sqrt(2) * Sigma
+    # squeezed variance (aligned quadrature assumption)
+    sigma = np.sqrt(0.5 * np.exp(-2 * r))
 
-    # SNR argument (note: structure unchanged)
-    argument = (2 * alpha_prime) / (np.sqrt(2) * Sigma_prime)
+    # decision threshold = 0
+    z = mu / (np.sqrt(2) * sigma)
 
-    return 0.5 * erfc(argument)
+    return 0.5 * erfc(z)
