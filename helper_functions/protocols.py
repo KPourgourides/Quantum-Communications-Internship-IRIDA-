@@ -64,25 +64,24 @@ def perr_dss(N_grid:np.array, beta_grid:np.array, homodyne_angle:float, num_samp
     return p_err
 
 
-def P_err_theory(N_grid, beta_grid, homodyne_angle):
+def perr_homodyne(N, beta):
+     
+     # Error probability for homodyne detection in the general case. For CS, beta=0
+    alpha = np.sqrt(N * (1 - beta))
+    Sigma = 1/(np.sqrt(N*beta) + np.sqrt(1+ N*beta))
+    z = 2*alpha/(np.sqrt(2)*Sigma)
+    perr = 0.5*erfc(z) 
+    
+    return perr
 
-    # ensure arrays
-    N_grid = np.asarray(N_grid)
-    beta_grid = np.asarray(beta_grid)
+def helstrom_bound(N, beta):
 
-    # squeezing parameter (vectorized)
-    r = np.arcsinh(np.sqrt(N_grid * beta_grid))
+    # Minimum theoretical error probability from the Helstrom bound
+    exponent = -4 * N * (1 - beta) * (
+        1
+        + 2 * N * beta
+        + 2 * np.sqrt(N * beta * (1 + N * beta))
+        )
+    perr = 0.5 * (1 - np.sqrt(1 - np.exp(exponent)))
 
-    # displacement amplitude
-    alpha = np.sqrt(N_grid * (1 - beta_grid))
-
-    # homodyne mean
-    mu = np.sqrt(2) * alpha * np.cos(homodyne_angle)
-
-    # squeezed variance (aligned quadrature assumption)
-    sigma = np.sqrt(0.5 * np.exp(-2 * r))
-
-    # decision threshold = 0
-    z = mu / (np.sqrt(2) * sigma)
-
-    return 0.5 * erfc(z)
+    return perr
