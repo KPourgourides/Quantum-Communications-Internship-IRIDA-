@@ -13,11 +13,12 @@ In this project we will follow closely the research paper [“Squeezing-enhanced
 
 ***
 - Defined Objectives/Plan for project
-- Read reference paper & studied theoretical background (homodyne detection, squeezed/coherent states, Helstrom bound)  
+- Read reference paper & studied theoretical background  
 - Familiarized with Strawberry Fields (SF) software  
 - Prepared helper functions for state visualisation and measurement in SF  
-- Prepared protocols for coherent states and displaced-squeezed states in noise-free channel  
-- Visualised the error probability and Helstrom bound for the aforementioned protocols 
+- Implemented coherent-state (CS) and displaced-squeezed-state (DSS)  communication protocols for a noise-free channel.
+- Derived analytically the expected probability error  
+- Visualised the error probability for the aforementioned protocols and fitted it to the derived probability error
 
 ***
 
@@ -25,14 +26,28 @@ In this project we will follow closely the research paper [“Squeezing-enhanced
 
 ***
 
-### Prepared helper functions for state visualisation and measurement in SF
+### Read reference paper & studied theoretical background 
 
-**State Visualisation:** Created functions that can visualise the Wigner function of a coherent state, squeezed-vacuum or displaced-squeezed vacuum according to user's inputs. The output is just a plot.
+**Reference paper**: Gives the general idea on how the protocol works and provides the analytical expressions which we will try to reproduce using the SF software for all the different cases.
 
-**State Measurement:** Created functions that can perform homodyne detection for a coherent state, squeezed-vacuum or displaced-squeezed vaccum according to user's inputs. The output is a single measurement following the statistics of the state.
+**Theoretical background**: Studied homodyne detection, squeezed/coherent states, and Helstrom bound to understand the underlying physics of the project. 
 
 ***
-### Prepared protocols for coherent states and displaced-squeezed states in noise-free channel  
+
+### Familiarized with Strawberry Fields (SF) software  
+
+Read the [SF software documentation](https://strawberryfields.readthedocs.io/en/latest/) and spent some time to familiarize with its conventions and learn about the potential applications. 
+
+***
+
+### Prepared helper functions for state visualisation and measurement in SF
+
+**State Visualisation:** Created functions that can visualise the Wigner function of a coherent state, squeezed-vacuum or displaced-squeezed vacuum according to the user's inputs. The output is just a plot.
+
+**State Measurement:** Created functions that can perform homodyne detection for a coherent state, squeezed-vacuum or displaced-squeezed vacuum according to the user's inputs. The output is a single measurement following the statistics of the state.
+
+***
+### Implemented coherent-state (CS) and displaced-squeezed-state (DSS)    communication protocols for a noise-free channel
 
 Homodyne measurements are performed for the exchange of coherent states, which are either prepared as $|\alpha\rangle$ or $|-\alpha\rangle$ with equal probability. For each value of $\alpha$, the measurement process is sampled many times, and the number of incorrectly classified states is recorded to estimate the error probability. This procedure is repeated over a range of values of $\alpha$ to investigate the behaviour of the error probability as a function of the average photon number.
 
@@ -43,4 +58,33 @@ $$N_{\mathrm{tot}} = |\alpha|^2 + \sinh^2(r)$$
 and the squeezing fraction,
 
 $$\beta = \frac{\sinh^2(r)}{N_{\mathrm{tot}}}.$$
+
+***
+
+### Derived analytically the expected probability error
+
+Although the reference paper outlines the initial steps of the derivation, it does not provide an explicit closed-form expression for the general error probability, but only its asymptotic behaviour in the limit $N>>1$ (Eqs. 16 & 17). Therefore, the next step was to derive the formula analytically and to check that the aforementioned limit agrees with the obtained formula:
+
+$$P_{err} = \frac{1}{2}\text{erfc}(\frac{2 \sqrt{N_{tot}(1-\beta)}}{\sqrt2\Sigma})$$
+
+where
+
+$$\Sigma = (\sqrt{N\beta}+ \sqrt{N\beta+1})^{-1}$$
+
+The derived expression was found to be in full agreement with the asymptotic results presented in the reference paper.
+
+***
+
+### Visualised the error probability for the aforementioned protocols and fitted it to the derived probability error
+
+The produced data seem to follow well the derived error probability for both protocols and all parameters deviate less than $0.6\sigma$ from the expected value, validating our procedure so far.
+
+***
+
+## Next steps
+
+- Compare the obtained results with those reported in the reference paper
+- Determine the squeezing threshold for which the DSS protocol outperforms the CS protocol $(\beta_{th})$
+- Determine the optimal squeezing fraction $(\beta_{opt})$
+- Compare the error probability of both protocols with the corresponding Helstrom bound
 
