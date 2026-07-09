@@ -3,8 +3,10 @@ from strawberryfields.ops import *
 import numpy as np
 import math
 from scipy.special import erfc
+from scipy.optimize import curve_fit
 from helper_functions.state_measurement import *
 from scipy.special import erfc
+import plotly.graph_objects as go
 
 
 def perr_cs(alpha_grid:np.array, homodyne_angle:float, num_samples:int):
@@ -74,6 +76,7 @@ def perr_homodyne(N, beta):
     
     return perr
 
+
 def helstrom_bound(N, beta):
 
     # Minimum theoretical error probability from the Helstrom bound
@@ -85,3 +88,98 @@ def helstrom_bound(N, beta):
     perr = 0.5 * (1 - np.sqrt(1 - np.exp(exponent)))
 
     return perr
+
+
+def model_dss(coords, A, B):
+
+        N, beta = coords
+        alpha = np.sqrt(N*(1-beta))
+        Sigma = 1 / (np.sqrt(N*beta) +np.sqrt(1 + N*beta))
+
+        return (A * erfc(B*alpha/Sigma)).ravel()
+
+
+def model_cs(N, A, B):
+        return A * erfc(B*np.sqrt(N))
+
+
+def plot_perr(N_grid_dss, beta_grid_dss, p_err_dss, p_err_cs, N_cs, dss = True, cs = True, data = False):
+
+    
+    ########################  CS  #################################
+
+    # Fit theoretical form
+    z_data_cs = p_err_cs
+
+    params_cs, covariance_cs = curve_fit(model_cs, N_cs, z_data_cs)
+    A_fit_cs, B_fit_cs = params_cs
+    A_err_cs, B_err_cs = np.sqrt(np.diag(covariance_cs))
+
+    print('--- CS ---')
+    print(fr"A_cs = {A_fit_cs:.3f} ± {A_err_cs:.3f}, {(np.abs(A_fit_cs - 0.5)/(A_err_cs)):.3f}σ away from theoretical value")
+    print(f"B_cs = {B_fit_cs:.3f} ± {B_err_cs:.3f}, {(np.abs(B_fit_cs - np.sqrt(2))/(B_err_cs)):.3f}σ away from theoretical value")
+
+    # Create fitted surface
+    N_fit_cs = np.linspace(N_cs.min(), N_cs.max(), 200)
+    beta_fit_cs = np.linspace(0, 1, 200)
+    N_surface_cs, beta_surface_cs = np.meshgrid(N_fit_cs, beta_fit_cs, indexing="ij")
+
+    # No beta dependence
+    z_surface_cs = model_cs(N_surface_cs, A_fit_cs, B_fit_cs)
+
+    # Fitted surface
+        # Plot
+    fig = go.Figure()
+
+    if cs:
+        fig.add_trace(go.Surface(x=N_surface_cs, y=beta_surface_cs, z=z_surface_cs, colorscale="Blues_r", opacity=1, name="Fitted surface", showscale=False))
+
+        if data:
+            # Simulation scatter extended in beta
+            beta_values_cs = np.linspace(0, 1, 20)
+
+            for beta in beta_values_cs:
+                fig.add_trace(go.Scatter3d(x=N_cs, y=np.full_like(N_cs, beta), z=z_data_cs, mode="markers", 
+                            marker=dict(size=3, color=z_data_cs, colorscale="Viridis", opacity=1), name=f"Simulation β={beta:.2f}", showlegend=False))
+                
+    fig.update_layout(title="Fitted error probability surface", width=800, height=800, 
+                    scene=dict(xaxis_title="N", yaxis_title="β", zaxis = dict(title="P_err", type="log"), aspectmode="cube"))
+
+    ########################  DSS  #################################
+    N_mesh_dss, beta_mesh_dss = np.meshgrid(N_grid_dss, beta_grid_dss, indexing="ij")
+
+    # Fit A and B
+    params_dss, covariance_dss = curve_fit(model_dss,(N_mesh_dss, beta_mesh_dss), p_err_dss.ravel())
+    A_fit_dss, B_fit_dss = params_dss
+    A_err_dss, B_err_dss = np.sqrt(np.diag(covariance_dss))
+
+    print('--- DSS ---')
+    print(f"A_dss = {A_fit_dss:.4f} ± {A_err_dss:.4f}, {(np.abs(A_fit_dss - 0.5)/(A_err_dss)):.3f}σ away from theoretical value")
+    print(f"B_dss = {B_fit_dss:.3f} ± {B_err_dss:.3f}, {(np.abs(B_fit_dss - np.sqrt(2))/(B_err_dss)):.3f}σ away from theoretical value")
+
+    # Generate fitted surface
+    N_fit_dss = np.linspace(N_mesh_dss.min(), N_mesh_dss.max(), 200)
+    beta_fit_dss = np.linspace(beta_mesh_dss.min(), beta_mesh_dss.max(), 200)
+    N_surface_dss, beta_surface_dss = np.meshgrid(N_fit_dss, beta_fit_dss, indexing="ij")
+    p_surface_dss = model_dss((N_surface_dss, beta_surface_dss), A_fit_dss, B_fit_dss).reshape(N_surface_dss.shape)
+
+    z_sim_dss = p_err_dss.ravel()
+    z_surface_dss = p_surface_dss
+
+    # Fitted surface
+    if dss:
+        fig.add_trace(go.Surface(x=N_surface_dss, y=beta_surface_dss, z=z_surface_dss, colorscale="Reds_r", opacity=1, name="Fit", showscale=False))
+
+        if data:
+            fig.add_trace(go.Scatter3d(x=N_mesh_dss.ravel(), y=beta_mesh_dss.ravel(), z=z_sim_dss.ravel(), mode='markers', 
+                        marker=dict(size=3, color=z_sim_dss.ravel(), colorscale='Viridis', opacity=1), name="Simulation"))
+    # Layout
+    fig.update_layout(title="Error probability fit", width=700, height=700, 
+                    scene=dict(xaxis_title="N", yaxis_title="β", zaxis=dict(title="P_err", type="log")))
+
+    if cs or dss:
+        fig.show()
+
+    return A_fit_cs, B_fit_cs, A_fit_dss, B_fit_dss
+
+        
