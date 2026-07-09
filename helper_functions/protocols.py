@@ -7,6 +7,7 @@ from scipy.optimize import curve_fit
 from helper_functions.state_measurement import *
 from scipy.special import erfc
 import plotly.graph_objects as go
+import matplotlib.pyplot as plt
 
 
 def perr_cs(alpha_grid:np.array, homodyne_angle:float, num_samples:int):
@@ -181,5 +182,91 @@ def plot_perr(N_grid_dss, beta_grid_dss, p_err_dss, p_err_cs, N_cs, dss = True, 
         fig.show()
 
     return A_fit_cs, B_fit_cs, A_fit_dss, B_fit_dss
+
+def beta_model(N, a, b):
+    return a*N/(b*N + 1)
+
+
+def beta_opt(N, a, b):
+    return a*N/(b*N + 1)
+
+
+
+def plot_squeezing(A_fit_cs, B_fit_cs, A_fit_dss, B_fit_dss):
+
+    ############ FIND THRESHOLD ############
+
+    N = np.linspace(0, 2, 100)
+    beta = np.linspace(0, 1, 100)
+
+    N_grid, beta_grid = np.meshgrid(N, beta, indexing="ij")
+
+    Z1 = model_dss((N_grid, beta_grid), A_fit_dss, B_fit_dss).reshape(N_grid.shape)
+    Z2 = model_cs(N_grid, A_fit_cs, B_fit_cs)
+
+    difference = Z1 - Z2
+
+    plt.figure(figsize=(10,3), dpi=300)
+
+    cs = plt.contour(N_grid, beta_grid, difference, levels=[0], alpha=0)
+    path = cs.get_paths()[0]
+    verts = path.vertices
+
+    N_intersection = verts[:,0]
+    beta_intersection = verts[:,1]
+
+    pars_th, pcov_th = curve_fit(beta_model, N_intersection, beta_intersection)
+    pars_th_err = np.sqrt(np.diag(pcov_th))
+
+    print('--- THRESHOLD ---')
+    print(f"A_th = {pars_th[0]:.3f} ± {pars_th_err[0]:.3f}, {(np.abs(pars_th[0] - 4)/(pars_th_err[0])):.3f}σ away from theoretical value")
+    print(f"B_th = {pars_th[1]:.3f} ± {pars_th_err[1]:.3f}, {(np.abs(pars_th[1] - 4)/(pars_th_err[1])):.3f}σ away from theoretical value")
+
+    ############ FIND OPTIMAL ############
+
+        
+    N_mesh, beta_mesh = np.meshgrid(N_grid, beta_grid, indexing="ij")
+
+    # Generate fitted surface
+    N_fit = np.linspace(N_mesh.min(), N_mesh.max(), 100)
+    beta_fit = np.linspace(beta_mesh.min(), beta_mesh.max(), 100)
+    N_surface, beta_surface = np.meshgrid(N_fit, beta_fit, indexing="ij")
+    p_surface = model_dss((N_surface, beta_surface), A_fit_dss, B_fit_dss).reshape(N_surface.shape)
+
+    #z_sim = p_err_dss.ravel()
+    z_surface = p_surface
+
+    idx = np.argmin(z_surface, axis=1)   # minimum along beta for each N
+
+    beta_min = beta_fit[idx]
+    z_min = z_surface[np.arange(len(N_fit)), idx]
+
+
+    pars_opt, pcov_opt = curve_fit(beta_opt, N_fit, beta_min)
+    pars_opt_err = np.sqrt(np.diag(pcov_opt))
+
+    print('--- OPTIMAL ---')
+    print(f"A_opt = {pars_opt[0]:.3f} ± {pars_opt_err[0]:.3f}, {(np.abs(pars_opt[0] - 1)/(pars_opt_err[0])):.3f}σ away from theoretical value")
+    print(f"B_opt = {pars_opt[1]:.3f} ± {pars_opt_err[1]:.3f}, {(np.abs(pars_opt[1] - 2)/(pars_opt_err[1])):.3f}σ away from theoretical value")
+
+
+
+    plt.scatter(N_intersection, beta_intersection, s=5, color='k')
+    plt.fill_between(N, beta_model(N, *(pars_th-pars_th_err)), beta_model(N, *(pars_th+pars_th_err)), alpha=0.5, color='gray')
+    plt.plot(N, beta_model(N, *pars_th), color='k', linewidth=1, label = rf'$\beta_{{\rm th}}(N)=\frac{{{pars_th[0]:.3f}\,N}}{{{pars_th[1]:.3f}\,N+1}}$')
+    plt.fill_between(N, beta_model(N, *pars_th), 0, color='blue', alpha=0.5)
+    plt.fill_between(N, beta_model(N, *pars_th), 1, color='red', alpha=0.5)
+    plt.xlabel('N')
+    plt.ylabel(r'$\beta_{th}$')
+
+    plt.fill_between(N, beta_opt(N, *(pars_opt-pars_opt_err)), beta_opt(N, *(pars_opt+pars_opt_err)), alpha=0.5, color='gray')
+    plt.plot(N, beta_model(N, *pars_opt), color='lightgray', linewidth=1, label = rf'$\beta_{{\rm opt}}(N)=\frac{{{pars_opt[0]:.3f}\,N}}{{{pars_opt[1]:.3f}\,N+1}}$')
+    plt.scatter(N_fit, beta_min, color='lightgray', s=3)
+
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+     
 
         
