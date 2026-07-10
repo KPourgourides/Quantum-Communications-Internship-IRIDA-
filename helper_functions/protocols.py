@@ -240,19 +240,19 @@ def plot_squeezing(A_fit_cs, B_fit_cs, A_fit_dss, B_fit_dss):
     # Intersection
     plt.scatter(N_intersection, beta_intersection, s=10, color='r', edgecolors='k', marker='D', zorder=10)
     plt.fill_between(N, beta_th(N, *(pars_th-pars_th_err)), beta_th(N, *(pars_th+pars_th_err)), alpha=0.5, color='gray', zorder=5)
-    plt.plot(N, beta_th(N, *pars_th), color='k', linewidth=1, label = rf'$\beta_{{\rm th}}(N)=\frac{{{pars_th[0]:.2f}\,N}}{{{pars_th[1]:.2f}\,N+1}}$', zorder=5)
-    plt.fill_between(N, beta_th(N, *pars_th), 0, color='blue', alpha=0.5)
-    plt.fill_between(N, beta_th(N, *pars_th), 1, color='red', alpha=0.5)
+    plt.plot(N, beta_th(N, *pars_th), color='red', linewidth=1, label = rf'$\beta_{{\rm th}}(N)=\frac{{{pars_th[0]:.2f}\,N}}{{{pars_th[1]:.2f}\,N+1}}$', zorder=5)
+    plt.fill_between(N, beta_th(N, *pars_th), 0, color='blue', alpha=0.2)
+    plt.fill_between(N, beta_th(N, *pars_th), 1, color='red', alpha=0.2)
 
     # Minima
     plt.fill_between(N, beta_opt(N, *(pars_opt-pars_opt_err)), beta_opt(N, *(pars_opt+pars_opt_err)), alpha=0.5, color='gray')
-    plt.plot(N, beta_th(N, *pars_opt), color='k', linewidth=1, label = rf'$\beta_{{\rm opt}}(N)=\frac{{{pars_opt[0]:.2f}\,N}}{{{pars_opt[1]:.2f}\,N+1}}$', zorder=1)
-    plt.scatter(N_fit, beta_min, color='white', edgecolors='k', s=40, marker='*', zorder=10)
+    plt.plot(N, beta_th(N, *pars_opt), color='Blue', linewidth=1, label = rf'$\beta_{{\rm opt}}(N)=\frac{{{pars_opt[0]:.2f}\,N}}{{{pars_opt[1]:.2f}\,N+1}}$', zorder=1)
+    plt.scatter(N_fit, beta_min, color='blue', edgecolors='k', s=10, marker='D', zorder=10)
 
-    #texts
-    plt.text(x=0.5, y=0.9, s="Coherent States are easier to discriminate", color='k', fontweight='bold')
-    plt.text(x=0.8, y=0.6, s="Displaced Squeezed States are easier to discriminate", color='k', fontweight='bold')
-    plt.text(x=0.8, y=0.175, s="Optimal amount of squeezing for easiest discrimination", color='white', fontweight='bold', fontstyle='italic')
+    # Texts
+    plt.text(x=0.5, y=0.9, s="Coherent States are easier to discriminate", color='red', fontweight='bold')
+    plt.text(x=0.8, y=0.6, s="Displaced Squeezed States are easier to discriminate", color='blue', fontweight='bold')
+    #plt.text(x=0.8, y=0.175, s="Optimal amount of squeezing for easiest discrimination", color='white', fontweight='bold', fontstyle='italic')
 
     plt.xlabel(r'$N$ (Average number of photons)')
     plt.ylabel(r'$\beta$ (Squeezing Fraction)')
