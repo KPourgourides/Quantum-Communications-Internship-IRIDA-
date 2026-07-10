@@ -106,8 +106,7 @@ def model_cs(N, A, B):
 
 def plot_perr(N_grid_dss, beta_grid_dss, p_err_dss, p_err_cs, N_cs, dss = True, cs = True, data = False):
 
-    
-    ########################  CS  #################################
+    #------------------  CS  ------------------
 
     # Fit theoretical form
     z_data_cs = p_err_cs
@@ -125,11 +124,10 @@ def plot_perr(N_grid_dss, beta_grid_dss, p_err_dss, p_err_cs, N_cs, dss = True, 
     beta_fit_cs = np.linspace(0, 1, 200)
     N_surface_cs, beta_surface_cs = np.meshgrid(N_fit_cs, beta_fit_cs, indexing="ij")
 
-    # No beta dependence
-    z_surface_cs = model_cs(N_surface_cs, A_fit_cs, B_fit_cs)
-
     # Fitted surface
-        # Plot
+    z_surface_cs = model_cs(N_surface_cs, A_fit_cs, B_fit_cs)
+    
+    # Plot
     fig = go.Figure()
 
     if cs:
@@ -139,18 +137,19 @@ def plot_perr(N_grid_dss, beta_grid_dss, p_err_dss, p_err_cs, N_cs, dss = True, 
             # Simulation scatter extended in beta
             beta_values_cs = np.linspace(0, 1, 20)
 
+            # No beta dependence
             for beta in beta_values_cs:
                 fig.add_trace(go.Scatter3d(x=N_cs, y=np.full_like(N_cs, beta), z=z_data_cs, mode="markers", 
                             marker=dict(size=3, color=z_data_cs, colorscale="Viridis", opacity=1), name=f"Simulation β={beta:.2f}", showlegend=False))
-                
-    fig.update_layout(title="Fitted error probability surface", width=800, height=800, 
-                    scene=dict(xaxis_title="N", yaxis_title="β", zaxis = dict(title="P_err", type="log"), aspectmode="cube"))
+               
+    #------------------ DSS ------------------
 
-    ########################  DSS  #################################
     N_mesh_dss, beta_mesh_dss = np.meshgrid(N_grid_dss, beta_grid_dss, indexing="ij")
 
-    # Fit A and B
-    params_dss, covariance_dss = curve_fit(model_dss,(N_mesh_dss, beta_mesh_dss), p_err_dss.ravel())
+    # Fit theoretical form
+    z_data_dss = p_err_dss.ravel()
+
+    params_dss, covariance_dss = curve_fit(model_dss,(N_mesh_dss, beta_mesh_dss), z_data_dss)
     A_fit_dss, B_fit_dss = params_dss
     A_err_dss, B_err_dss = np.sqrt(np.diag(covariance_dss))
 
@@ -158,30 +157,29 @@ def plot_perr(N_grid_dss, beta_grid_dss, p_err_dss, p_err_cs, N_cs, dss = True, 
     print(f"A_dss = {A_fit_dss:.4f} ± {A_err_dss:.4f}, {(np.abs(A_fit_dss - 0.5)/(A_err_dss)):.3f}σ away from theoretical value")
     print(f"B_dss = {B_fit_dss:.3f} ± {B_err_dss:.3f}, {(np.abs(B_fit_dss - np.sqrt(2))/(B_err_dss)):.3f}σ away from theoretical value")
 
-    # Generate fitted surface
+    # Create fitted surface
     N_fit_dss = np.linspace(N_mesh_dss.min(), N_mesh_dss.max(), 200)
     beta_fit_dss = np.linspace(beta_mesh_dss.min(), beta_mesh_dss.max(), 200)
     N_surface_dss, beta_surface_dss = np.meshgrid(N_fit_dss, beta_fit_dss, indexing="ij")
-    p_surface_dss = model_dss((N_surface_dss, beta_surface_dss), A_fit_dss, B_fit_dss).reshape(N_surface_dss.shape)
-
-    z_sim_dss = p_err_dss.ravel()
-    z_surface_dss = p_surface_dss
-
+    
     # Fitted surface
+    z_surface_dss = model_dss((N_surface_dss, beta_surface_dss), A_fit_dss, B_fit_dss).reshape(N_surface_dss.shape)
+    
     if dss:
         fig.add_trace(go.Surface(x=N_surface_dss, y=beta_surface_dss, z=z_surface_dss, colorscale="Reds_r", opacity=1, name="Fit", showscale=False))
 
         if data:
-            fig.add_trace(go.Scatter3d(x=N_mesh_dss.ravel(), y=beta_mesh_dss.ravel(), z=z_sim_dss.ravel(), mode='markers', 
-                        marker=dict(size=3, color=z_sim_dss.ravel(), colorscale='Viridis', opacity=1), name="Simulation"))
-    # Layout
-    fig.update_layout(title="Error probability fit", width=700, height=700, 
-                    scene=dict(xaxis_title="N", yaxis_title="β", zaxis=dict(title="P_err", type="log")))
+            fig.add_trace(go.Scatter3d(x=N_mesh_dss.ravel(), y=beta_mesh_dss.ravel(), z=z_data_dss.ravel(), mode='markers', 
+                        marker=dict(size=3, color=z_data_dss.ravel(), colorscale='Viridis', opacity=1), name="Simulation"))
 
+    fig.update_layout(title="Fitted error probability", width=800, height=800, 
+                    scene=dict(xaxis_title="N", yaxis_title="β", zaxis = dict(title="P_err", type="log"), aspectmode="cube"))
+    
     if cs or dss:
         fig.show()
 
     return A_fit_cs, B_fit_cs, A_fit_dss, B_fit_dss
+
 
 def beta_model(N, a, b):
     return a*N/(b*N + 1)
@@ -191,11 +189,11 @@ def beta_opt(N, a, b):
     return a*N/(b*N + 1)
 
 
-
 def plot_squeezing(A_fit_cs, B_fit_cs, A_fit_dss, B_fit_dss):
 
-    ############ FIND THRESHOLD ############
+    #---------- FIND THRESHOLD ----------
 
+    # Find intersection points
     N = np.linspace(0, 2, 100)
     beta = np.linspace(0, 1, 100)
 
@@ -215,6 +213,7 @@ def plot_squeezing(A_fit_cs, B_fit_cs, A_fit_dss, B_fit_dss):
     N_intersection = verts[:,0]
     beta_intersection = verts[:,1]
 
+    # Fit intersection points to theoretical curve
     pars_th, pcov_th = curve_fit(beta_model, N_intersection, beta_intersection)
     pars_th_err = np.sqrt(np.diag(pcov_th))
 
@@ -222,26 +221,23 @@ def plot_squeezing(A_fit_cs, B_fit_cs, A_fit_dss, B_fit_dss):
     print(f"A_th = {pars_th[0]:.3f} ± {pars_th_err[0]:.3f}, {(np.abs(pars_th[0] - 4)/(pars_th_err[0])):.3f}σ away from theoretical value")
     print(f"B_th = {pars_th[1]:.3f} ± {pars_th_err[1]:.3f}, {(np.abs(pars_th[1] - 4)/(pars_th_err[1])):.3f}σ away from theoretical value")
 
-    ############ FIND OPTIMAL ############
+    #---------- FIND OPTIMAL ----------
 
-        
     N_mesh, beta_mesh = np.meshgrid(N_grid, beta_grid, indexing="ij")
 
-    # Generate fitted surface
+    # Generate fitted surface to fnd minima
     N_fit = np.linspace(N_mesh.min(), N_mesh.max(), 100)
     beta_fit = np.linspace(beta_mesh.min(), beta_mesh.max(), 100)
     N_surface, beta_surface = np.meshgrid(N_fit, beta_fit, indexing="ij")
-    p_surface = model_dss((N_surface, beta_surface), A_fit_dss, B_fit_dss).reshape(N_surface.shape)
 
-    #z_sim = p_err_dss.ravel()
-    z_surface = p_surface
+    # Fitted surface
+    z_surface = model_dss((N_surface, beta_surface), A_fit_dss, B_fit_dss).reshape(N_surface.shape)
 
-    idx = np.argmin(z_surface, axis=1)   # minimum along beta for each N
-
+    # Minima along beta for each N
+    idx = np.argmin(z_surface, axis=1)   
     beta_min = beta_fit[idx]
-    z_min = z_surface[np.arange(len(N_fit)), idx]
-
-
+    
+    # Fit minima to theoretical curve
     pars_opt, pcov_opt = curve_fit(beta_opt, N_fit, beta_min)
     pars_opt_err = np.sqrt(np.diag(pcov_opt))
 
@@ -249,8 +245,9 @@ def plot_squeezing(A_fit_cs, B_fit_cs, A_fit_dss, B_fit_dss):
     print(f"A_opt = {pars_opt[0]:.3f} ± {pars_opt_err[0]:.3f}, {(np.abs(pars_opt[0] - 1)/(pars_opt_err[0])):.3f}σ away from theoretical value")
     print(f"B_opt = {pars_opt[1]:.3f} ± {pars_opt_err[1]:.3f}, {(np.abs(pars_opt[1] - 2)/(pars_opt_err[1])):.3f}σ away from theoretical value")
 
-
-
+    # Plot
+    
+    # Intersection
     plt.scatter(N_intersection, beta_intersection, s=5, color='k')
     plt.fill_between(N, beta_model(N, *(pars_th-pars_th_err)), beta_model(N, *(pars_th+pars_th_err)), alpha=0.5, color='gray')
     plt.plot(N, beta_model(N, *pars_th), color='k', linewidth=1, label = rf'$\beta_{{\rm th}}(N)=\frac{{{pars_th[0]:.3f}\,N}}{{{pars_th[1]:.3f}\,N+1}}$')
@@ -259,6 +256,7 @@ def plot_squeezing(A_fit_cs, B_fit_cs, A_fit_dss, B_fit_dss):
     plt.xlabel('N')
     plt.ylabel(r'$\beta_{th}$')
 
+    # Minima
     plt.fill_between(N, beta_opt(N, *(pars_opt-pars_opt_err)), beta_opt(N, *(pars_opt+pars_opt_err)), alpha=0.5, color='gray')
     plt.plot(N, beta_model(N, *pars_opt), color='lightgray', linewidth=1, label = rf'$\beta_{{\rm opt}}(N)=\frac{{{pars_opt[0]:.3f}\,N}}{{{pars_opt[1]:.3f}\,N+1}}$')
     plt.scatter(N_fit, beta_min, color='lightgray', s=3)
