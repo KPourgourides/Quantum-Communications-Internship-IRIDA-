@@ -92,7 +92,7 @@ def helstrom_bound(N, beta):
 
 
 def model_dss(coords, A, B):
-
+        
         N, beta = coords
         alpha = np.sqrt(N*(1-beta))
         Sigma = 1 / (np.sqrt(N*beta) +np.sqrt(1 + N*beta))
@@ -100,21 +100,21 @@ def model_dss(coords, A, B):
         return (A * erfc(B*alpha/Sigma)).ravel()
 
 
-def model_cs(N, A, B):
+def model_cs(coords, A, B):
+        
+        N, beta = coords
         return A * erfc(B*np.sqrt(N))
 
 
-def plot_perr(N_grid_dss, beta_grid_dss, p_err_dss, p_err_cs, N_cs, dss = True, cs = True, data = False):
+def fit_homodyne_perr(N_cs, beta_cs, N_dss, beta_dss, perr_cs, perr_dss, dss=True, cs=True, data=False):
 
     #------------------  CS  ------------------
 
-    # Fit theoretical form
-    z_data_cs = p_err_cs
-
-    params_cs, covariance_cs = curve_fit(model_cs, N_cs, z_data_cs)
+    # Fit the data to the homodyne theory
+    z_data_cs = perr_cs
+    params_cs, covariance_cs = curve_fit(model_cs, (N_cs, beta_cs), z_data_cs)
     A_fit_cs, B_fit_cs = params_cs
     A_err_cs, B_err_cs = np.sqrt(np.diag(covariance_cs))
-
     print('--- CS ---')
     print(fr"A_cs = {A_fit_cs:.3f} ± {A_err_cs:.3f}, {(np.abs(A_fit_cs - 0.5)/(A_err_cs)):.3f}σ away from theoretical value")
     print(f"B_cs = {B_fit_cs:.3f} ± {B_err_cs:.3f}, {(np.abs(B_fit_cs - np.sqrt(2))/(B_err_cs)):.3f}σ away from theoretical value")
@@ -123,13 +123,10 @@ def plot_perr(N_grid_dss, beta_grid_dss, p_err_dss, p_err_cs, N_cs, dss = True, 
     N_fit_cs = np.linspace(N_cs.min(), N_cs.max(), 200)
     beta_fit_cs = np.linspace(0, 1, 200)
     N_surface_cs, beta_surface_cs = np.meshgrid(N_fit_cs, beta_fit_cs, indexing="ij")
-
-    # Fitted surface
-    z_surface_cs = model_cs(N_surface_cs, A_fit_cs, B_fit_cs)
+    z_surface_cs = model_cs((N_surface_cs, beta_surface_cs), A_fit_cs, B_fit_cs)
     
     # Plot
     fig = go.Figure()
-
     if cs:
         fig.add_trace(go.Surface(x=N_surface_cs, y=beta_surface_cs, z=z_surface_cs, colorscale="Blues_r", opacity=1, name="Fitted surface", showscale=False))
 
@@ -144,25 +141,21 @@ def plot_perr(N_grid_dss, beta_grid_dss, p_err_dss, p_err_cs, N_cs, dss = True, 
                
     #------------------ DSS ------------------
 
-    N_mesh_dss, beta_mesh_dss = np.meshgrid(N_grid_dss, beta_grid_dss, indexing="ij")
+    N_mesh_dss, beta_mesh_dss = np.meshgrid(N_dss, beta_dss, indexing="ij")
 
-    # Fit theoretical form
-    z_data_dss = p_err_dss.ravel()
-
+    # Fit data to homodyne theory
+    z_data_dss = perr_dss.ravel()
     params_dss, covariance_dss = curve_fit(model_dss,(N_mesh_dss, beta_mesh_dss), z_data_dss)
     A_fit_dss, B_fit_dss = params_dss
     A_err_dss, B_err_dss = np.sqrt(np.diag(covariance_dss))
-
     print('--- DSS ---')
-    print(f"A_dss = {A_fit_dss:.4f} ± {A_err_dss:.4f}, {(np.abs(A_fit_dss - 0.5)/(A_err_dss)):.3f}σ away from theoretical value")
+    print(f"A_dss = {A_fit_dss:.3f} ± {A_err_dss:.3f}, {(np.abs(A_fit_dss - 0.5)/(A_err_dss)):.3f}σ away from theoretical value")
     print(f"B_dss = {B_fit_dss:.3f} ± {B_err_dss:.3f}, {(np.abs(B_fit_dss - np.sqrt(2))/(B_err_dss)):.3f}σ away from theoretical value")
 
     # Create fitted surface
     N_fit_dss = np.linspace(N_mesh_dss.min(), N_mesh_dss.max(), 200)
     beta_fit_dss = np.linspace(beta_mesh_dss.min(), beta_mesh_dss.max(), 200)
     N_surface_dss, beta_surface_dss = np.meshgrid(N_fit_dss, beta_fit_dss, indexing="ij")
-    
-    # Fitted surface
     z_surface_dss = model_dss((N_surface_dss, beta_surface_dss), A_fit_dss, B_fit_dss).reshape(N_surface_dss.shape)
     
     if dss:
@@ -172,7 +165,8 @@ def plot_perr(N_grid_dss, beta_grid_dss, p_err_dss, p_err_cs, N_cs, dss = True, 
             fig.add_trace(go.Scatter3d(x=N_mesh_dss.ravel(), y=beta_mesh_dss.ravel(), z=z_data_dss.ravel(), mode='markers', 
                         marker=dict(size=3, color=z_data_dss.ravel(), colorscale='Viridis', opacity=1), name="Simulation"))
 
-    fig.update_layout(title="Fitted error probability", width=800, height=800, 
+    #figure settings
+    fig.update_layout(title="Fit: State Discrimination Error Probability (Homodyne Detection)", width=800, height=800, 
                     scene=dict(xaxis_title="N", yaxis_title="β", zaxis = dict(title="P_err", type="log"), aspectmode="cube"))
     
     if cs or dss:
@@ -181,7 +175,7 @@ def plot_perr(N_grid_dss, beta_grid_dss, p_err_dss, p_err_cs, N_cs, dss = True, 
     return A_fit_cs, B_fit_cs, A_fit_dss, B_fit_dss
 
 
-def beta_model(N, a, b):
+def beta_th(N, a, b):
     return a*N/(b*N + 1)
 
 
@@ -196,16 +190,12 @@ def plot_squeezing(A_fit_cs, B_fit_cs, A_fit_dss, B_fit_dss):
     # Find intersection points
     N = np.linspace(0, 2, 100)
     beta = np.linspace(0, 1, 100)
-
     N_grid, beta_grid = np.meshgrid(N, beta, indexing="ij")
-
     Z1 = model_dss((N_grid, beta_grid), A_fit_dss, B_fit_dss).reshape(N_grid.shape)
-    Z2 = model_cs(N_grid, A_fit_cs, B_fit_cs)
-
+    Z2 = model_cs((N_grid, beta_grid), A_fit_cs, B_fit_cs)
     difference = Z1 - Z2
 
-    plt.figure(figsize=(10,3), dpi=300)
-
+    plt.figure(figsize=(10,4), dpi=300)
     cs = plt.contour(N_grid, beta_grid, difference, levels=[0], alpha=0)
     path = cs.get_paths()[0]
     verts = path.vertices
@@ -214,7 +204,7 @@ def plot_squeezing(A_fit_cs, B_fit_cs, A_fit_dss, B_fit_dss):
     beta_intersection = verts[:,1]
 
     # Fit intersection points to theoretical curve
-    pars_th, pcov_th = curve_fit(beta_model, N_intersection, beta_intersection)
+    pars_th, pcov_th = curve_fit(beta_th, N_intersection, beta_intersection)
     pars_th_err = np.sqrt(np.diag(pcov_th))
 
     print('--- THRESHOLD ---')
@@ -248,19 +238,24 @@ def plot_squeezing(A_fit_cs, B_fit_cs, A_fit_dss, B_fit_dss):
     # Plot
     
     # Intersection
-    plt.scatter(N_intersection, beta_intersection, s=5, color='k')
-    plt.fill_between(N, beta_model(N, *(pars_th-pars_th_err)), beta_model(N, *(pars_th+pars_th_err)), alpha=0.5, color='gray')
-    plt.plot(N, beta_model(N, *pars_th), color='k', linewidth=1, label = rf'$\beta_{{\rm th}}(N)=\frac{{{pars_th[0]:.3f}\,N}}{{{pars_th[1]:.3f}\,N+1}}$')
-    plt.fill_between(N, beta_model(N, *pars_th), 0, color='blue', alpha=0.5)
-    plt.fill_between(N, beta_model(N, *pars_th), 1, color='red', alpha=0.5)
-    plt.xlabel('N')
-    plt.ylabel(r'$\beta_{th}$')
+    plt.scatter(N_intersection, beta_intersection, s=10, color='r', edgecolors='k', marker='D', zorder=10)
+    plt.fill_between(N, beta_th(N, *(pars_th-pars_th_err)), beta_th(N, *(pars_th+pars_th_err)), alpha=0.5, color='gray', zorder=5)
+    plt.plot(N, beta_th(N, *pars_th), color='k', linewidth=1, label = rf'$\beta_{{\rm th}}(N)=\frac{{{pars_th[0]:.2f}\,N}}{{{pars_th[1]:.2f}\,N+1}}$', zorder=5)
+    plt.fill_between(N, beta_th(N, *pars_th), 0, color='blue', alpha=0.5)
+    plt.fill_between(N, beta_th(N, *pars_th), 1, color='red', alpha=0.5)
 
     # Minima
     plt.fill_between(N, beta_opt(N, *(pars_opt-pars_opt_err)), beta_opt(N, *(pars_opt+pars_opt_err)), alpha=0.5, color='gray')
-    plt.plot(N, beta_model(N, *pars_opt), color='lightgray', linewidth=1, label = rf'$\beta_{{\rm opt}}(N)=\frac{{{pars_opt[0]:.3f}\,N}}{{{pars_opt[1]:.3f}\,N+1}}$')
-    plt.scatter(N_fit, beta_min, color='lightgray', s=3)
+    plt.plot(N, beta_th(N, *pars_opt), color='k', linewidth=1, label = rf'$\beta_{{\rm opt}}(N)=\frac{{{pars_opt[0]:.2f}\,N}}{{{pars_opt[1]:.2f}\,N+1}}$', zorder=1)
+    plt.scatter(N_fit, beta_min, color='white', edgecolors='k', s=40, marker='*', zorder=10)
 
+    #texts
+    plt.text(x=0.5, y=0.9, s="Coherent States are easier to discriminate", color='k', fontweight='bold')
+    plt.text(x=0.8, y=0.6, s="Displaced Squeezed States are easier to discriminate", color='k', fontweight='bold')
+    plt.text(x=0.8, y=0.175, s="Optimal amount of squeezing for easiest discrimination", color='white', fontweight='bold', fontstyle='italic')
+
+    plt.xlabel(r'$N$ (Average number of photons)')
+    plt.ylabel(r'$\beta$ (Squeezing Fraction)')
     plt.legend()
     plt.tight_layout()
     plt.show()
