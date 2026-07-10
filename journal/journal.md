@@ -91,10 +91,13 @@ The produced data seem to follow well the derived error probability for both pro
 ## Week 2 Overview (July 8–15) 
 
 ***
-- Compared the obtained results with those reported in the reference paper
-- Derived analytically expressions from the reference paper
-- Determined the squeezing threshold for which the DSS protocol outperforms the CS protocol $(\beta_{th})$
-- Determined the optimal squeezing fraction $(\beta_{opt})$
-- Compared the error probability of both protocols with the corresponding Helstrom bound
+- Finished noise-free protocol:
+    - Compared the obtained results with those reported in the reference paper
+    - Derived analytically expressions from the reference paper
+    - Determined the squeezing threshold for which the DSS protocol outperforms the CS protocol $(\beta_{th})$
+    - Determined the optimal squeezing fraction $(\beta_{opt})$
+    - Compared the error probability of both protocols with the corresponding Helstrom bound
+    - Organized all files
+
 
 ***
