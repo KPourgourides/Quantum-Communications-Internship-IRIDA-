@@ -9,12 +9,16 @@ from scipy.special import erfc
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 
-def phase_diffused_cs(alphas: np.array, sigma: float, num_samples: int):
+def phase_diffused_cs(alpha_grid: np.array, sigma: float, num_samples: int):
     
-    p_err = np.zeros((len(alphas)))
+    # Calculation of error probability
+    #============================================
+    p_err = np.zeros((len(alpha_grid)))
     
-    for i in range(len(alphas)):
-        phis = np.random.normal(0, sigma, size=num_samples)
+    for i in range(len(alpha_grid)):
+
+        # Choose phase from Gaussian distribution
+        phis = np.random.normal(0, sigma, size=num_samples) 
         wrong_sign_counter = 0
 
         for phi in phis:
@@ -22,7 +26,7 @@ def phase_diffused_cs(alphas: np.array, sigma: float, num_samples: int):
             prog = sf.Program(1)
 
             with prog.context as q:
-                Dgate(coherent_sign*alphas[i]) | q
+                Dgate(coherent_sign*alpha_grid[i]) | q
                 Rgate(phi) | q
                 MeasureHomodyne(0) | q
 
@@ -32,7 +36,8 @@ def phase_diffused_cs(alphas: np.array, sigma: float, num_samples: int):
 
             if (result_sign>=0 and coherent_sign<0) or (result_sign<0 and coherent_sign>0):
                     wrong_sign_counter+= 1
-            p_err[i] = wrong_sign_counter/num_samples
+
+        p_err[i] = wrong_sign_counter/num_samples
 
     return p_err
 
@@ -50,10 +55,13 @@ def phase_diffused_dss(N_grid:np.array, beta_grid:np.array, sigma: float, num_sa
         for k, beta in enumerate(beta_grid):
             wrong_sign_counter = 0
             r_s = math.asinh(np.sqrt(N*beta))
+
+            # Choose phase from Gaussian distribution
             phis = np.random.normal(0, sigma, size=num_samples)
             for phi in phis:
                 coherent_sign = np.random.choice([1, -1])
                 prog = sf.Program(1)
+
                 with prog.context as q:
                     Sgate(r_s, 0) | q[0] 
                     Dgate(coherent_sign*alphas[k]) | q
@@ -66,5 +74,7 @@ def phase_diffused_dss(N_grid:np.array, beta_grid:np.array, sigma: float, num_sa
 
                 if (result_sign>=0 and coherent_sign<0) or (result_sign<0 and coherent_sign>0):
                         wrong_sign_counter+= 1
-                p_err[i][k] = wrong_sign_counter/num_samples
+
+            p_err[i][k] = wrong_sign_counter/num_samples
+
     return p_err
