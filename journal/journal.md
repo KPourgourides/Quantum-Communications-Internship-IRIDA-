@@ -98,6 +98,11 @@ The produced data seem to follow well the derived error probability for both pro
     - Determined the optimal squeezing fraction $(\beta_{opt})$
     - Compared the error probability of both protocols with the corresponding Helstrom bound
     - Organized all files
+- Started phase-diffusion protocol:
+    - Explored theoretical results of the paper 
+    - Implemented phase-diffusion protocol in SF
+    - Produced data for different sigmas 
+    - Investigated how to fit theoretical predictions on data (complicated expression)
 
 
 ***
