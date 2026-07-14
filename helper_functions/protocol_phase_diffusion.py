@@ -79,14 +79,9 @@ def phase_diffused_dss(N_grid:np.array, beta_grid:np.array, sigma: float, num_sa
     return p_err
 
 
-def fit_homodyne_perr(sigmas, print_err=False):
-
-    # Compute once
-    n_gh = 100
-    x_gh, w_gh = hermgauss(n_gh)
-
-    def theory_point(N, beta, sigma, A, B):
-
+def theory_point(N, beta, sigma, A, B, gauss):
+        
+        x_gh, w_gh = gauss
         a = np.sqrt(N*(1-beta))
         r = np.arcsinh(np.sqrt(N*beta))
         phi = np.sqrt(2) * sigma * x_gh
@@ -97,21 +92,51 @@ def fit_homodyne_perr(sigmas, print_err=False):
 
         return A * integral
 
-    def make_model(sigma):
+
+def theory_point_cs(N, sigma, A, B, gauss):
+        
+        x_gh, w_gh = gauss
+        a = np.sqrt(N)
+        r = 0
+        phi = np.sqrt(2) * sigma * x_gh
+        V = (np.exp(-2*r)*np.cos(phi)**2 + np.exp(2*r)*np.sin(phi)**2)
+
+        arg = B*a*np.cos(phi)/np.sqrt(V)
+        integral = np.sum(w_gh * erfc(arg)) / np.sqrt(np.pi)
+
+        return A * integral
+
+
+def make_model(sigma, gauss):
 
         def model(coords, A, B):
 
             N, beta = coords
             out = np.empty_like(N)
             for i in range(len(N)):
-                out[i] = theory_point( N[i], beta[i], sigma=sigma, A=A, B=B)
+                out[i] = theory_point( N[i], beta[i], sigma, A, B, gauss)
             return out
 
         return model
 
 
-    # Plotly figure
-    #===============================
+def make_model_cs(sigma, gauss):
+
+        def model(N, A, B):
+
+            out = np.empty_like(N)
+            for i in range(len(N)):
+                out[i] = theory_point_cs( N[i], sigma, A, B, gauss)
+            return out
+
+        return model
+
+
+
+def fit_homodyne_perr(sigmas, print_err=False, cs=False, dss=False, data=False):
+
+    n_gh = 100
+    gauss = hermgauss(n_gh)
 
     fig = go.Figure()
     colors = [
@@ -127,10 +152,87 @@ def fit_homodyne_perr(sigmas, print_err=False):
     "#7f7f7f",  # gray
     ]
     
+
+    #------------------  CS  ------------------
+    for i, sigma in enumerate(sigmas):
+        data = np.load(f"data/phase_diff/perr_data_phase_diff_cs_a40_S3000_sigma{sigma}.npz")
+
+        alpha_cs = data["alpha_grid"]
+        p_err_cs = data["p_err_cs"]
+        sigma_cs = data["sigma"]
+
+
+        N_cs = alpha_cs**2
+        beta_cs = np.linspace(0, 1, len(N_cs))
+
+        N_cs = alpha_cs**2
+        y = p_err_cs
+
+        model = make_model_cs(sigma, gauss)
+        pars, cov = curve_fit(model, N_cs, y)
+
+
+        A_fit_cs, B_fit_cs = pars
+        A_err_cs, B_err_cs = np.sqrt(np.diag(cov))
+
+
+        if print_err:
+            print('--- CS ---')
+            print(f"σ = {sigma}")
+            print(fr"A_cs = {A_fit_cs:.3f} ± {A_err_cs:.3f}, {(np.abs(A_fit_cs - 0.5)/(A_err_cs)):.3f}σ away from theoretical value")
+            print(f"B_cs = {B_fit_cs:.3f} ± {B_err_cs:.3f}, {(np.abs(B_fit_cs - np.sqrt(2))/(B_err_cs)):.3f}σ away from theoretical value")
+
+        N_plot = np.linspace(N_cs.min(), N_cs.max(), 80)
+        beta_plot = np.linspace(beta_cs.min(), beta_cs.max(), 80)
+
+        N_surface, beta_surface = np.meshgrid(N_plot, beta_plot, indexing="ij")
+        P_surface = np.zeros_like(N_surface)
+
+        for k in range(len(N_plot)):
+            for j in range(len(beta_plot)):
+
+                P_surface[k, j] = theory_point_cs(N_plot[k],  sigma_cs, A_fit_cs, B_fit_cs, gauss)
+
+        if cs:
+            # fitted surface
+            fig.add_trace(go.Surface( x=N_surface, y=beta_surface, z=P_surface, surfacecolor=np.zeros_like(P_surface), 
+                                colorscale=[[0.0, colors[i]], [1.0, colors[i]]], opacity=1, name="Fit", showscale=False))
+            
+            if data:
+                # Simulation scatter extended in beta
+                beta_values_cs = np.linspace(0, 1, 20)
+
+                # No beta dependence
+                for beta in beta_values_cs:
+                    fig.add_trace(go.Scatter3d(x=N_cs, y=np.full_like(N_cs, beta), z=p_err_cs, mode="markers", 
+                                marker=dict(size=3, color=colors[i], colorscale="Viridis", opacity=1), name=f"Simulation β={beta:.2f}", showlegend=False))
+
+
+
+    ####################################################################################################
+
+    # Plotly figure
+    #===============================
+
+        
+    colors = [
+    "#0C3858",  # blue
+    "#6F3434",  # red
+    "#084108",  # green
+    "#ff7f0e",  # orange
+    "#460880",  # purple
+    "#0c6f7c",  # cyan
+    "#5c0642",  # pink
+    "#941c04",  # brown
+    "#8b8b06",  # olive
+    "#212121",  # gray
+    ]
+
+    
     for i, sigma in enumerate(sigmas):
 
         #===============================
-        data = np.load(f"data/perr_data_phase_diff_dss_N40_b40_S10000_sigma{sigma}.npz")
+        data = np.load(f"data/phase_diff/perr_data_phase_diff_dss_N40_b40_S10000_sigma{sigma}.npz")
         N_dss = data["N"]
         beta_dss = data["beta"]
         p_err_dss = data["p_err_dss"]
@@ -141,7 +243,7 @@ def fit_homodyne_perr(sigmas, print_err=False):
         x = (N_mesh.ravel(), beta_mesh.ravel())
         y = p_err_dss.ravel()
 
-        model = make_model(sigma)
+        model = make_model(sigma, gauss)
         pars, cov = curve_fit(model,x, y)
         A_fit, B_fit = pars
         A_err, B_err = np.sqrt(np.diag(cov))
@@ -157,35 +259,23 @@ def fit_homodyne_perr(sigmas, print_err=False):
         beta_plot = np.linspace(beta_dss.min(), beta_dss.max(), 80)
 
         N_surface, beta_surface = np.meshgrid(N_plot, beta_plot, indexing="ij")
-
         P_surface = np.zeros_like(N_surface)
 
         for k in range(len(N_plot)):
             for j in range(len(beta_plot)):
 
-                P_surface[k, j] = theory_point(N_plot[k], beta_plot[j], sigma=sigma_dss, A=A_fit, B=B_fit)
+                P_surface[k, j] = theory_point(N_plot[k], beta_plot[j], sigma_dss, A_fit, B_fit, gauss)
 
         # fitted surface
-        fig.add_trace(
-            go.Surface( x=N_surface, y=beta_surface, z=P_surface, 
-                       
-                        # Constant value everywhere
-                        surfacecolor=np.zeros_like(P_surface),
-                        # Same color at both ends
-                        colorscale=[[0.0, colors[i]], [1.0, colors[i]]],
+        if dss:
+            fig.add_trace(go.Surface( x=N_surface, y=beta_surface, z=P_surface, surfacecolor=np.zeros_like(P_surface), 
+                                colorscale=[[0.0, colors[i]], [1.0, colors[i]]], opacity=1, name="Fit", showscale=False))
+        
+            if data:
+                fig.add_trace(go.Scatter3d(x=N_mesh.ravel(), y=beta_mesh.ravel(), z=p_err_dss.ravel(),
+                mode="markers", marker=dict(size=3, color=colors[i]), name=f"σ={sigma}"))
 
-                        opacity=1, name="Fit", showscale=False)
-            )
-
-        fig.update_layout(
-            scene=dict(
-                xaxis_title="N",
-                yaxis_title=r"β",
-                zaxis = dict(title="P_err", type="log"),
-                aspectmode ="cube",
-            ),
-            width=900,
-            height=750,
-        )
+        fig.update_layout(scene=dict(xaxis_title="N", yaxis_title=r"β", zaxis = dict(title="P_err", type="log"), 
+                            aspectmode ="cube"), width=900, height=750)
 
     fig.show()
