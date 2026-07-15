@@ -155,7 +155,7 @@ def fit_homodyne_perr(sigmas, print_err=False, cs=False, dss=False, data=False):
 
     #------------------  CS  ------------------
     for i, sigma in enumerate(sigmas):
-        data = np.load(f"data/phase_diff/perr_data_phase_diff_cs_a40_S3000_sigma{sigma}.npz")
+        data = np.load(f"data/phase_diff/perr_data_phase_diff_cs_a40_S10000_sigma{sigma}.npz")
 
         alpha_cs = data["alpha_grid"]
         p_err_cs = data["p_err_cs"]
