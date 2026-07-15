@@ -168,7 +168,7 @@ def fit_homodyne_perr(N_cs, beta_cs, N_dss, beta_dss, perr_cs, perr_dss, dss=Tru
     if cs or dss:
         fig.show()
 
-    return params_cs, params_dss
+    return params_cs, params_err_cs, params_dss, params_err_dss
 
 
 def beta_th(N, a, b):
@@ -224,12 +224,12 @@ def plot_optimal_squeezing(params_cs, params_dss):
     beta_min = beta_fit[idx]
     
     # Fit minima to theoretical curve
-    pars_opt, pcov_opt = curve_fit(beta_opt, N_fit, beta_min)
-    pars_opt_err = np.sqrt(np.diag(pcov_opt))
+    params_opt, pcov_opt = curve_fit(beta_opt, N_fit, beta_min)
+    params_opt_err = np.sqrt(np.diag(pcov_opt))
 
     print('--- OPTIMAL ---')
-    print(f"A_opt = {pars_opt[0]:.3f} ± {pars_opt_err[0]:.3f}, {(np.abs(pars_opt[0] - 1)/(pars_opt_err[0])):.3f}σ away from theoretical value")
-    print(f"B_opt = {pars_opt[1]:.3f} ± {pars_opt_err[1]:.3f}, {(np.abs(pars_opt[1] - 2)/(pars_opt_err[1])):.3f}σ away from theoretical value")
+    print(f"A_opt = {params_opt[0]:.3f} ± {params_opt_err[0]:.3f}, {(np.abs(params_opt[0] - 1)/(params_opt_err[0])):.3f}σ away from theoretical value")
+    print(f"B_opt = {params_opt[1]:.3f} ± {params_opt_err[1]:.3f}, {(np.abs(params_opt[1] - 2)/(params_opt_err[1])):.3f}σ away from theoretical value")
 
     # Plot
     
@@ -241,8 +241,8 @@ def plot_optimal_squeezing(params_cs, params_dss):
     plt.fill_between(N, beta_th(N, *pars_th), 1, color='red', alpha=0.2)
 
     # Minima
-    plt.fill_between(N, beta_opt(N, *(pars_opt-pars_opt_err)), beta_opt(N, *(pars_opt+pars_opt_err)), alpha=0.5, color='gray')
-    plt.plot(N, beta_th(N, *pars_opt), color='Blue', linewidth=1, label = rf'$\beta_{{\rm opt}}(N)=\frac{{{pars_opt[0]:.2f}\,N}}{{{pars_opt[1]:.2f}\,N+1}}$', zorder=1)
+    plt.fill_between(N, beta_opt(N, *(params_opt-params_opt_err)), beta_opt(N, *(params_opt+params_opt_err)), alpha=0.5, color='gray')
+    plt.plot(N, beta_th(N, *params_opt), color='Blue', linewidth=1, label = rf'$\beta_{{\rm opt}}(N)=\frac{{{params_opt[0]:.2f}\,N}}{{{params_opt[1]:.2f}\,N+1}}$', zorder=1)
     plt.scatter(N_fit, beta_min, color='blue', edgecolors='k', s=10, marker='D', zorder=10)
 
     # Texts
@@ -254,6 +254,9 @@ def plot_optimal_squeezing(params_cs, params_dss):
     plt.legend()
     plt.tight_layout()
     plt.show()
+
+    return params_opt, params_opt_err
+    
 
 
      
