@@ -66,7 +66,7 @@ def perr_dss(N_grid:np.array, beta_grid:np.array, homodyne_angle:float, num_samp
 
     return p_err
 
-
+'''
 def perr_homodyne(N, beta):
      
      # Error probability for homodyne detection in the general case. For CS, beta=0
@@ -76,16 +76,13 @@ def perr_homodyne(N, beta):
     perr = 0.5*erfc(z) 
     
     return perr
-
+'''
 
 def helstrom_bound(N, beta):
 
     # Minimum theoretical error probability from the Helstrom bound
-    exponent = -4 * N * (1 - beta) * (
-        1
-        + 2 * N * beta
-        + 2 * np.sqrt(N * beta * (1 + N * beta))
-        )
+    exponent = -4 * N * (1 - beta) * (1 + 2 * N * beta + 2 * np.sqrt(N * beta * (1 + N * beta)))
+    
     perr = 0.5 * (1 - np.sqrt(1 - np.exp(exponent)))
 
     return perr
