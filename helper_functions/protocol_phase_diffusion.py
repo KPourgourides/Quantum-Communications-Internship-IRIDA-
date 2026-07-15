@@ -79,9 +79,9 @@ def perr_dss(N_grid:np.array, beta_grid:np.array, sigma:float, num_samples:int):
     return p_err
 
 
-def theory_point_dss(N:float, beta:float, sigma:float, pars:tuple, gauss:tuple):
+def theory_point_dss(N:float, beta:float, sigma:float, params:tuple, gauss:tuple):
         
-        A, B = pars
+        A, B = params
         x_gh, w_gh = gauss
         a = np.sqrt(N*(1-beta))
         r = np.arcsinh(np.sqrt(N*beta))
@@ -94,9 +94,9 @@ def theory_point_dss(N:float, beta:float, sigma:float, pars:tuple, gauss:tuple):
         return A*integral
 
 
-def theory_point_cs(N:float, sigma:float, pars:tuple, gauss:tuple):
+def theory_point_cs(N:float, sigma:float, params:tuple, gauss:tuple):
         
-        A, B = pars
+        A, B = params
         x_gh, w_gh = gauss
         a = np.sqrt(N)
         r = 0
@@ -144,6 +144,7 @@ def fit_homodyne_perr(sigmas, print_params=False, cs=False, dss=False, data=Fals
     colors = [ "#1f77b4",  "#d62728",  "#2ca02c",  "#ff7f0e",  "#9467bd",  "#17becf",  "#e377c2",  "#8c564b",  "#bcbd22",  "#7f7f7f"]
     
     #------------------  CS  ------------------
+    params_dict_cs = {}
 
     if print_params:
         print(f"{'='*30}")
@@ -164,13 +165,15 @@ def fit_homodyne_perr(sigmas, print_params=False, cs=False, dss=False, data=Fals
         y_cs = perr_cs
 
         model_cs = make_model_cs(sigma, gauss)
-        pars_cs, cov_cs = curve_fit(model_cs, x_cs, y_cs)
-        pars_err_cs = np.sqrt(np.diag(cov_cs))
+        params_cs, cov_cs = curve_fit(model_cs, x_cs, y_cs)
+        params_err_cs = np.sqrt(np.diag(cov_cs))
+        params_dict_cs[f'params_{sigma}'] = params_cs
+        params_dict_cs[f'params_err_{sigma}'] = params_err_cs
 
         if print_params:
             print(f"σ = {sigma}")
-            for j, par in enumerate(pars_cs):
-                print(fr"param_{j}_cs = {par:.3f} ± {pars_err_cs[j]:.3f}")
+            for j, par in enumerate(params_cs):
+                print(fr"param_{j}_cs = {par:.3f} ± {params_err_cs[j]:.3f}")
             print(f"{'-'*30}")
         
         N_fit_cs = np.linspace(N_cs.min(), N_cs.max(), 80)
@@ -182,7 +185,7 @@ def fit_homodyne_perr(sigmas, print_params=False, cs=False, dss=False, data=Fals
         for k in range(len(N_fit_cs)):
             for l in range(len(beta_fit_cs)):
 
-                z_surface_cs[k, l] = theory_point_cs(N_fit_cs[k],  sigma_cs, pars_cs, gauss)
+                z_surface_cs[k, l] = theory_point_cs(N_fit_cs[k],  sigma_cs, params_cs, gauss)
 
         if cs:
             # fitted surface
@@ -206,6 +209,7 @@ def fit_homodyne_perr(sigmas, print_params=False, cs=False, dss=False, data=Fals
     colors = ["#0C3858",  "#6F3434",  "#084108",  "#ff7f0e",  "#460880",  "#0c6f7c",  "#5c0642",  "#941c04",  "#8b8b06",  "#212121"]
 
     #------------------  DSS  ------------------
+    params_dict_dss = {}
 
     if print_params:
         print(f"{'='*30}")
@@ -226,13 +230,15 @@ def fit_homodyne_perr(sigmas, print_params=False, cs=False, dss=False, data=Fals
         y_dss = perr_dss.ravel()
 
         model_dss = make_model_dss(sigma, gauss)
-        pars_dss, cov_dss = curve_fit(model_dss,x_dss, y_dss)
-        pars_err_dss = np.sqrt(np.diag(cov_dss))
+        params_dss, cov_dss = curve_fit(model_dss,x_dss, y_dss)
+        params_err_dss = np.sqrt(np.diag(cov_dss))
+        params_dict_dss[f'params_{sigma}'] = params_dss
+        params_dict_dss[f'params_err_{sigma}'] = params_err_dss
 
         if print_params:
             print(f"σ = {sigma}")
-            for j, par in enumerate(pars_dss):
-                print(fr"param_{j}_dss = {par:.3f} ± {pars_err_dss[j]:.3f}")
+            for j, par in enumerate(params_dss):
+                print(fr"param_{j}_dss = {par:.3f} ± {params_err_dss[j]:.3f}")
             print(f"{'-'*30}")
 
         #===============================
@@ -245,7 +251,7 @@ def fit_homodyne_perr(sigmas, print_params=False, cs=False, dss=False, data=Fals
         for k in range(len(N_fit_dss)):
             for l in range(len(beta_fit_dss)):
 
-                z_surface_dss[k, l] = theory_point_dss(N_fit_dss[k], beta_fit_dss[l], sigma_dss, pars_dss, gauss)
+                z_surface_dss[k, l] = theory_point_dss(N_fit_dss[k], beta_fit_dss[l], sigma_dss, params_dss, gauss)
 
         # fitted surface
         if dss:
@@ -260,3 +266,7 @@ def fit_homodyne_perr(sigmas, print_params=False, cs=False, dss=False, data=Fals
                             aspectmode ="cube"), width=900, height=750)
 
     fig.show()
+    return params_dict_cs, params_dict_dss
+
+
+
