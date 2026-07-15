@@ -7,6 +7,7 @@ from helper_functions.state_measurement import *
 from scipy.special import erfc
 import plotly.graph_objects as go
 from numpy.polynomial.hermite import hermgauss
+import matplotlib.pyplot as plt
 
 def perr_cs(alpha_grid:np.array, sigma:float, num_samples:int):
     
@@ -265,8 +266,63 @@ def fit_homodyne_perr(sigmas, print_params=False, cs=False, dss=False, data=Fals
         fig.update_layout(scene=dict(xaxis_title="N", yaxis_title=r"β", zaxis = dict(title="P_err", type="log"), 
                             aspectmode ="cube"), width=900, height=750)
 
-    fig.show()
+    if cs or dss:
+        fig.show()
     return params_dict_cs, params_dict_dss
 
 
+def plot_optimal_squeezing(sigmas, params_dict_cs, params_dict_dss, opt = False, th = False):
+
+    colors_th = [ "#1f77b4",  "#d62728",  "#2ca02c",  "#ff7f0e",  "#9467bd",  "#17becf",  "#e377c2",  "#8c564b",  "#bcbd22",  "#7f7f7f"]
+    colors_opt = ["#0C3858",  "#6F3434",  "#084108",  "#ff7f0e",  "#460880",  "#0c6f7c",  "#5c0642",  "#941c04",  "#8b8b06",  "#212121"]
+    n_gh = 100
+    gauss = hermgauss(n_gh)
+    plt.figure(figsize=(15,6), dpi=300)
+    #---------- FIND THRESHOLD ----------
+    N_fit = np.linspace(0, 2, 80)
+    beta_fit = np.linspace(0, 1, 80)
+    N_surface_cs, beta_surface_cs = np.meshgrid(N_fit, beta_fit, indexing="ij")
+    N_surface_dss, beta_surface_dss = np.meshgrid(N_fit, beta_fit, indexing="ij")
+
+    for i,sigma in enumerate(sigmas):
+        params_cs = params_dict_cs[f'params_{sigma}']
+        params_dss = params_dict_dss[f'params_{sigma}']
+
+        z_surface_cs = np.zeros_like(N_surface_cs)
+        z_surface_dss = np.zeros_like(N_surface_dss)
+
+        for k in range(len(N_fit)):
+            for l in range(len(beta_fit)):
+                z_surface_cs[k, l] = theory_point_cs(N_fit[k],  sigma, params_cs, gauss)
+                z_surface_dss[k, l] = theory_point_dss(N_fit[k], beta_fit[l], sigma, params_dss, gauss)
+
+        # Find intersection points
+        difference = z_surface_dss - z_surface_cs
+        
+        cs = plt.contour(N_surface_cs, beta_surface_cs, difference, levels=[0], alpha=0)
+        path = cs.get_paths()[0]
+        verts = path.vertices
+
+        N_intersection = verts[:,0]
+        beta_intersection = verts[:,1]
+        mask = (N_intersection > 0.02) & (beta_intersection > 0.005)
+
+        # Minima along beta for each N
+        idx = np.argmin(z_surface_dss, axis=1)   
+        beta_min = beta_fit[idx]
+
+        if th:
+            plt.scatter(N_intersection[mask], beta_intersection[mask], s=30, edgecolors='k', color=colors_th[i], marker='D', zorder=10, label = f'σ={sigma:0.1f}')
+            plt.fill_between(N_intersection[mask], beta_intersection[mask], 0, alpha=0.8, zorder=0, color=colors_th[i])
+
+        if opt:
+            plt.scatter(N_fit, beta_min, color=colors_opt[i], edgecolors='k', s=50, marker='H', zorder=10)
+            if not th:
+                 plt.ylim(0, 0.3)
+        
+        plt.xlabel(r'$N$ (Average number of photons)')
+        plt.ylabel(r'$\beta$ (Squeezing Fraction)')
+        if th:
+            plt.legend()
+        plt.tight_layout()
 
