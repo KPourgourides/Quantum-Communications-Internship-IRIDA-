@@ -179,7 +179,7 @@ def beta_opt(N, a, b):
     return a*N/(b*N + 1)
 
 
-def plot_optimal_squeezing(params_cs, params_dss):
+def optimal_squeezing(params_cs, params_dss):
 
     #---------- FIND THRESHOLD ----------
 
