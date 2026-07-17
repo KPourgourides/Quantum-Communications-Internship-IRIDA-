@@ -106,11 +106,7 @@ The produced data seem to follow well the derived error probability for both pro
 
 ***
 
-## Progress
-
-***
-
-### Noise-free protocol
+## Progress - Noise-free protocol
 
 ***
 
@@ -132,13 +128,13 @@ From the intersection of the fitted error probability surfaces of the CS and DSS
 
 ***
 
- ### Determined the optimal squeezing fraction $(\beta_{opt})$ from fitted data
+### Determined the optimal squeezing fraction $(\beta_{opt})$ from fitted data
 
- From the fitted error probability surface of the DSS protocol the minimum values are collected over the average photon number which determine $\beta_{opt}(N)$. The points are fitted against Eq. 8 and the parameters deviate less than 0.9 $\sigma$ from theoretical predictions. 
+From the fitted error probability surface of the DSS protocol the minimum values are collected over the average photon number which determine $\beta_{opt}(N)$. The points are fitted against Eq. 8 and the parameters deviate less than 0.9 $\sigma$ from theoretical predictions. 
 
- ***
+***
 
- ### Compared the error probability of CS and DSS protocol with the corresponding Helstrom bound
+### Compared the error probability of CS and DSS protocol with the corresponding Helstrom bound
 
 Visualised Helstrom bound for CS and DSS protocol (Eq. 5) and measured the distance from the corresponding error probability ($\beta=\beta_{opt}$ in DSS protocol). The results show that the DSS protocol is always closer or approximately as close to the corresponding Helstrom bound. This indicates that allocating an optimal fraction of the available energy to squeezing, rather than entirely to displacement, improves the discrimination performance.
 
@@ -150,9 +146,10 @@ Visualised Helstrom bound for CS and DSS protocol (Eq. 5) and measured the dista
 
 Arriving at the end of the noise-free protocol signified a good point to organize the existent files and notebooks to make them user-friendly, readable and consistent (e.g. variable names). This establishes a solid workflow which can be followed in the next protocols that are more complex, and the user can navigate smoothly between them.
 
-### Phase-diffusion protocol
+### Progress - Phase-diffusion protocol
 
 ***
+
 ### Explored theoretical results of the paper 
 
 
