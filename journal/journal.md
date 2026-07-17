@@ -96,13 +96,24 @@ The produced data seem to follow well the derived error probability for both pro
     - Derived analytically expressions from the reference paper
     - Determined the squeezing threshold for which the DSS protocol outperforms the CS protocol $(\beta_{th})$
     - Determined the optimal squeezing fraction $(\beta_{opt})$
-    - Compared the error probability of both protocols with the corresponding Helstrom bound
+    - Compared the error probability of cs and dss with the corresponding Helstrom bound
     - Organized all files
+    
 - Started phase-diffusion protocol:
     - Explored theoretical results of the paper 
     - Implemented phase-diffusion protocol in SF
     - Produced data for different sigmas 
-    - Investigated how to fit theoretical predictions on data (complicated expression)
+
+## Week 3 Overview (July 15-22) 
+
+- Continued phase-diffusion protocol:
+    - Fitted theoretical predictions of Perr on data 
+    - Determined the squeezing threshold for which the DSS protocol outperforms the CS protocol $(\beta_{th})$
+    - Determined the optimal squeezing fraction $(\beta_{opt})$
+
+- To do:
+    - Find helstrom bound for cs and dss
+    - Find an accurate analytical function to fit data for $(\beta_{th})$ and $(\beta_{opt})$
 
 
 ***
