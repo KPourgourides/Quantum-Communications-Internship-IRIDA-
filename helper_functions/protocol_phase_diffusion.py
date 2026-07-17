@@ -271,12 +271,13 @@ def fit_homodyne_perr(sigmas, print_params=False, cs=False, dss=False, data=Fals
     return params_dict_cs, params_dict_dss
 
 
-def plot_optimal_squeezing(sigmas, params_dict_cs, params_dict_dss, opt = False, th = False):
+def optimal_squeezing(sigmas, params_dict_cs, params_dict_dss, opt = False, th = False):
 
     colors_th = [ "#1f77b4",  "#d62728",  "#2ca02c",  "#ff7f0e",  "#9467bd",  "#17becf",  "#e377c2",  "#8c564b",  "#bcbd22",  "#7f7f7f"]
     colors_opt = ["#0C3858",  "#6F3434",  "#084108",  "#ff7f0e",  "#460880",  "#0c6f7c",  "#5c0642",  "#941c04",  "#8b8b06",  "#212121"]
     n_gh = 100
     gauss = hermgauss(n_gh)
+
     plt.figure(figsize=(15,6), dpi=300)
     #---------- FIND THRESHOLD ----------
     N_fit = np.linspace(0, 2, 80)
