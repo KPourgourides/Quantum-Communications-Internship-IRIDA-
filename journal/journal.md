@@ -91,29 +91,84 @@ The produced data seem to follow well the derived error probability for both pro
 ## Week 2 Overview (July 8–15) 
 
 ***
-- Finished noise-free protocol:
-    - Compared the obtained results with those reported in the reference paper
-    - Derived analytically expressions from the reference paper
-    - Determined the squeezing threshold for which the DSS protocol outperforms the CS protocol $(\beta_{th})$
-    - Determined the optimal squeezing fraction $(\beta_{opt})$
-    - Compared the error probability of cs and dss with the corresponding Helstrom bound
+- Completed noise-free protocol:
+    - Compared the obtained error probability plots with those in the reference paper
+    - Derived analytical expressions from the reference paper
+    - Determined the squeezing threshold $(\beta_{th})$ from fitted data
+    - Determined the optimal squeezing fraction $(\beta_{opt})$ from fitted data
+    - Compared the error probability of coherent-state (CS) protocol and displaced-squeezed state (DSS) protocol with the corresponding Helstrom bound
     - Organized all files
     
 - Started phase-diffusion protocol:
     - Explored theoretical results of the paper 
-    - Implemented phase-diffusion protocol in SF
-    - Produced data for different sigmas 
+    - Implemented phase-diffusion protocol in SF and produced data for different sigmas 
+
+
+***
+
+## Progress
+
+***
+
+### Noise-free protocol
+
+***
+
+### Compared the obtained error probability plots with those in the reference paper
+
+The simulated error probability surfaces were compared with those presented in the reference paper and showed excellent qualitative and quantitative agreement over the investigated region.
+
+***
+
+### Derived analytical expressions from the reference paper
+
+Derived the squeezing fraction threshold $(\beta_{th})$ and optimal squeezing fraction $(\beta_{opt})$ (Eq. 8 from the paper) analytically. The squeezing threshold sets the upper limit of squeezing  $0<\beta<\beta_{th}$ for which the DSS protocol outperforms the CS protocol. The optimal squeezing fraction corresponds to the squeezing $(\beta_{opt})$ that can achieve the lowest error probability, which is closer to the DSS Helstrom bound. 
+
+***
+
+### Determined the squeezing threshold $(\beta_{th})$ from fitted data
+
+From the intersection of the fitted error probability surfaces of the CS and DSS protocols $\beta_{th}$ is determined. For $0<\beta<\beta_{th}$ the DSS protocol achieves a lower error probability than the CS protocol and is therefore advantageous. The points are fitted against Eq. 8 and the parameters deviate less than 0.9 $\sigma$ from theoretical predictions. 
+
+***
+
+ ### Determined the optimal squeezing fraction $(\beta_{opt})$ from fitted data
+
+ From the fitted error probability surface of the DSS protocol the minimum values are collected over the average photon number which determine $\beta_{opt}(N)$. The points are fitted against Eq. 8 and the parameters deviate less than 0.9 $\sigma$ from theoretical predictions. 
+
+ ***
+
+ ### Compared the error probability of CS and DSS protocol with the corresponding Helstrom bound
+
+Visualised Helstrom bound for CS and DSS protocol (Eq. 5) and measured the distance from the corresponding error probability ($\beta=\beta_{opt}$ in DSS protocol). The results show that the DSS protocol is always closer or approximately as close to the corresponding Helstrom bound. This indicates that allocating an optimal fraction of the available energy to squeezing, rather than entirely to displacement, improves the discrimination performance.
+
+***
+
+###  Organized all files
+
+***
+
+Arriving at the end of the noise-free protocol signified a good point to organize the existent files and notebooks to make them user-friendly, readable and consistent (e.g. variable names). This establishes a solid workflow which can be followed in the next protocols that are more complex, and the user can navigate smoothly between them.
+
+### Phase-diffusion protocol
+
+***
+### Explored theoretical results of the paper 
+
+
+***
+
+### Implemented phase-diffusion protocol in SF and produced data for different sigmas 
+
+***
 
 ## Week 3 Overview (July 15-22) 
 
 - Continued phase-diffusion protocol:
-    - Fitted theoretical predictions of Perr on data 
-    - Determined the squeezing threshold for which the DSS protocol outperforms the CS protocol $(\beta_{th})$
-    - Determined the optimal squeezing fraction $(\beta_{opt})$
+    - Fitted theoretical predictions of Perr on data for different phase-diffusion $\sigma$
+    - Determined the squeezing threshold for which the DSS protocol outperforms the CS protocol $(\beta_{th})$ for different $\sigma$
+    - Determined the optimal squeezing fraction $(\beta_{opt})$ for different $\sigma$
 
 - To do:
     - Find helstrom bound for cs and dss
     - Find an accurate analytical function to fit data for $(\beta_{th})$ and $(\beta_{opt})$
-
-
-***
