@@ -143,7 +143,7 @@ def fit_homodyne_perr(sigmas, print_params=False, cs=False, dss=False, data=Fals
     gauss = hermgauss(n_gh)
 
     fig = go.Figure()
-    colors = [ "#1f77b4",  "#d62728",  "#2ca02c",  "#ff7f0e",  "#9467bd",  "#17becf",  "#e377c2",  "#8c564b",  "#bcbd22",  "#7f7f7f"]
+    colors = [ "#1f77b4",  "#d62728",  "#2ca02c",  "#ff7f0e",  "#9467bd",  "#17becf",  "#e377c2",  "#8c564b",  "#bcbd22",  "#7f7f7f",  "#5af74b"]
     
     #------------------  CS  ------------------
     params_dict_cs = {}
@@ -208,7 +208,7 @@ def fit_homodyne_perr(sigmas, print_params=False, cs=False, dss=False, data=Fals
     # Plotly figure
     #===============================
 
-    colors = ["#0C3858",  "#6F3434",  "#084108",  "#ff7f0e",  "#460880",  "#0c6f7c",  "#5c0642",  "#941c04",  "#8b8b06",  "#212121"]
+    colors = ["#0C3858",  "#6F3434",  "#084108",  "#ff7f0e",  "#460880",  "#0c6f7c",  "#5c0642",  "#941c04",  "#8b8b06",  "#212121",  "#092a06",  "#092a06"]
 
     #------------------  DSS  ------------------
     params_dict_dss = {}
@@ -338,8 +338,8 @@ def check_beta_th(N:float, sigma:float, params_cs:tuple, params_dss:tuple):
 
 def optimal_squeezing(sigmas, params_dict_cs, params_dict_dss, opt = False, th = False):
 
-    colors_th = [ "#1f77b4",  "#d62728",  "#2ca02c",  "#ff7f0e",  "#9467bd",  "#17becf",  "#e377c2",  "#8c564b",  "#bcbd22",  "#7f7f7f"]
-    colors_opt = ["#0C3858",  "#6F3434",  "#084108",  "#ff7f0e",  "#460880",  "#0c6f7c",  "#5c0642",  "#941c04",  "#8b8b06",  "#212121"]
+    colors_th = [ "#1f77b4",  "#d62728",  "#2ca02c",  "#ff7f0e",  "#9467bd",  "#17becf",  "#e377c2",  "#8c564b",  "#bcbd22",  "#7f7f7f", "#5af74b"]
+    colors_opt = ["#0C3858",  "#6F3434",  "#084108",  "#ff7f0e",  "#460880",  "#0c6f7c",  "#5c0642",  "#941c04",  "#8b8b06",  "#212121", "#092a06"]
     n_gh = 100
     gauss = hermgauss(n_gh)
 
@@ -378,7 +378,7 @@ def optimal_squeezing(sigmas, params_dict_cs, params_dict_dss, opt = False, th =
         
         # Find theoretical values for β_th
         beta_th = []
-        N_th = np.linspace(0.01, 2, 100)
+        N_th = np.linspace(0, 2, 100)
         for N in N_th:
             beta_th.append(beta_threshold_theory(N, sigma, params_cs, params_dss, gauss))
         beta_th = np.array(beta_th)
@@ -417,7 +417,8 @@ def beta_vs_sigma(N_values, sigmas, params_dict_cs, params_dict_dss):
             params_dss = params_dict_dss[f'params_{sigma}']
 
             beta = beta_threshold_theory(N, sigma, params_cs, params_dss, gauss)
-
+            if np.isnan(beta):
+                beta = 0
             beta_values.append(beta)
         plt.plot(sigmas, beta_values, marker="o", label=f"N={N}")
 
