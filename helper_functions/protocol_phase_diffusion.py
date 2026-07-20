@@ -270,6 +270,69 @@ def fit_homodyne_perr(sigmas, print_params=False, cs=False, dss=False, data=Fals
         fig.show()
     return params_dict_cs, params_dict_dss
 
+from scipy.optimize import brentq
+
+def beta_upper_threshold(N, sigma, params_cs, params_dss, gauss):
+
+    pcs = theory_point_cs(N, sigma, params_cs, gauss)
+
+    def F(beta):
+        return theory_point_dss(N, beta, sigma, params_dss, gauss) - pcs
+
+    # sample to locate minimum
+    betas = np.linspace(0,1,500)
+    vals = np.array([F(b) for b in betas])
+
+    idx_min = np.argmin(vals)
+    beta_min = betas[idx_min]
+
+    if F(beta_min)*F(1)>0:
+        return np.nan
+    
+    beta_upper = brentq(F,beta_min,1.0)
+    return beta_upper
+
+def check_beta(N, sigma, params_cs, params_dss, gauss):
+
+    pcs = theory_point_cs(N, sigma, params_cs, gauss)
+
+    def F(beta):
+        return theory_point_dss(
+            N,
+            beta,
+            sigma,
+            params_dss,
+            gauss
+        ) - pcs
+
+    betas = np.linspace(0, 1, 500)
+    vals = np.array([F(b) for b in betas])
+
+    idx_min = np.argmin(vals)
+
+    print("========== CHECK BETA ==========")
+    print("N =", N)
+    print("P_CS =", pcs)
+    print()
+    print("beta minimum =", betas[idx_min])
+    print("F(beta_min) =", vals[idx_min])
+    print("F(0) =", F(0))
+    print("F(1) =", F(1))
+    print()
+    print("Sign condition:")
+    print("F(beta_min)*F(1) =", vals[idx_min]*F(1))
+    print("===============================")
+
+    plt.figure(figsize=(6,4))
+    plt.plot(betas, vals)
+    plt.axhline(0, color="black")
+    plt.axvline(betas[idx_min], linestyle="--", label="minimum")
+    plt.xlabel(r"$\beta$")
+    plt.ylabel(r"$F(\beta)=P_{DSS}-P_{CS}$")
+    plt.legend()
+    plt.show()
+
+    return betas[idx_min], vals[idx_min]
 
 def optimal_squeezing(sigmas, params_dict_cs, params_dict_dss, opt = False, th = False):
 
@@ -280,18 +343,17 @@ def optimal_squeezing(sigmas, params_dict_cs, params_dict_dss, opt = False, th =
 
     plt.figure(figsize=(15,6), dpi=300)
     #---------- FIND THRESHOLD ----------
-    N_fit = np.linspace(0, 2, 80)
-    beta_fit = np.linspace(0, 1, 80)
+    N_fit = np.linspace(0, 2, 200)
+    beta_fit = np.linspace(0, 1, 200)
     N_surface_cs, beta_surface_cs = np.meshgrid(N_fit, beta_fit, indexing="ij")
     N_surface_dss, beta_surface_dss = np.meshgrid(N_fit, beta_fit, indexing="ij")
 
     for i,sigma in enumerate(sigmas):
         params_cs = params_dict_cs[f'params_{sigma}']
         params_dss = params_dict_dss[f'params_{sigma}']
-
         z_surface_cs = np.zeros_like(N_surface_cs)
         z_surface_dss = np.zeros_like(N_surface_dss)
-
+        #check_beta(1.8, sigma, params_cs, params_dss, gauss)
         for k in range(len(N_fit)):
             for l in range(len(beta_fit)):
                 z_surface_cs[k, l] = theory_point_cs(N_fit[k],  sigma, params_cs, gauss)
@@ -307,15 +369,23 @@ def optimal_squeezing(sigmas, params_dict_cs, params_dict_dss, opt = False, th =
         N_intersection = verts[:,0]
         beta_intersection = verts[:,1]
         mask = (N_intersection > 0.02) & (beta_intersection > 0.005)
+        #params_th, _= curve_fit(solve_x(sigma, gauss), N_intersection, beta_intersection)
 
         # Minima along beta for each N
         idx = np.argmin(z_surface_dss, axis=1)   
         beta_min = beta_fit[idx]
+        
+    
+        beta_values = []
+        N_theory = np.linspace(0.01, 2, 100)
+        for N in N_theory:
+            beta_values.append(beta_upper_threshold(N,sigma,params_cs,params_dss,gauss))
 
+        beta_values = np.array(beta_values)
         if th:
             plt.scatter(N_intersection[mask], beta_intersection[mask], s=30, edgecolors='k', color=colors_th[i], marker='D', zorder=10, label = f'σ={sigma:0.1f}')
             plt.fill_between(N_intersection[mask], beta_intersection[mask], 0, alpha=0.8, zorder=0, color=colors_th[i])
-
+            plt.plot(N_theory, beta_values, color='k', linewidth = 3)
         if opt:
             plt.scatter(N_fit, beta_min, color=colors_opt[i], edgecolors='k', s=50, marker='H', zorder=10)
             if not th:
@@ -327,3 +397,44 @@ def optimal_squeezing(sigmas, params_dict_cs, params_dict_dss, opt = False, th =
             plt.legend()
         plt.tight_layout()
 
+
+
+def beta_vs_sigma(N_values, sigmas, params_dict_cs, params_dict_dss):
+
+    n_gh = 100
+    gauss = hermgauss(n_gh)
+
+    plt.figure(figsize=(8,5), dpi=300)
+
+    for N in N_values:
+
+        beta_values = []
+
+        for sigma in sigmas:
+
+            params_cs = params_dict_cs[f'params_{sigma}']
+            params_dss = params_dict_dss[f'params_{sigma}']
+
+            beta = beta_upper_threshold(
+                N,
+                sigma,
+                params_cs,
+                params_dss,
+                gauss
+            )
+
+            beta_values.append(beta)
+
+        plt.plot(
+            sigmas,
+            beta_values,
+            marker="o",
+            label=f"N={N}"
+        )
+
+    plt.xlabel(r"$\sigma$")
+    plt.ylabel(r"$\beta_{\mathrm{threshold}}$")
+    plt.legend()
+    plt.grid()
+    plt.tight_layout()
+    plt.show()
