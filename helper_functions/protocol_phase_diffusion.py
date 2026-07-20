@@ -2,7 +2,7 @@ import strawberryfields as sf
 from strawberryfields.ops import *
 import numpy as np
 import math
-from scipy.optimize import curve_fit
+from scipy.optimize import curve_fit, brentq
 from helper_functions.state_measurement import *
 from scipy.special import erfc
 import plotly.graph_objects as go
@@ -270,7 +270,6 @@ def fit_homodyne_perr(sigmas, print_params=False, cs=False, dss=False, data=Fals
         fig.show()
     return params_dict_cs, params_dict_dss
 
-from scipy.optimize import brentq
 
 def beta_upper_threshold(N, sigma, params_cs, params_dss, gauss):
 
@@ -289,7 +288,7 @@ def beta_upper_threshold(N, sigma, params_cs, params_dss, gauss):
     if F(beta_min)*F(1)>0:
         return np.nan
     
-    beta_upper = brentq(F,beta_min,1.0)
+    beta_upper = brentq(F, beta_min, 1.0)
     return beta_upper
 
 def check_beta(N, sigma, params_cs, params_dss, gauss):
@@ -297,13 +296,7 @@ def check_beta(N, sigma, params_cs, params_dss, gauss):
     pcs = theory_point_cs(N, sigma, params_cs, gauss)
 
     def F(beta):
-        return theory_point_dss(
-            N,
-            beta,
-            sigma,
-            params_dss,
-            gauss
-        ) - pcs
+        return theory_point_dss( N, beta, sigma, params_dss, gauss) - pcs
 
     betas = np.linspace(0, 1, 500)
     vals = np.array([F(b) for b in betas])
@@ -343,8 +336,8 @@ def optimal_squeezing(sigmas, params_dict_cs, params_dict_dss, opt = False, th =
 
     plt.figure(figsize=(15,6), dpi=300)
     #---------- FIND THRESHOLD ----------
-    N_fit = np.linspace(0, 2, 200)
-    beta_fit = np.linspace(0, 1, 200)
+    N_fit = np.linspace(0, 2, 80)
+    beta_fit = np.linspace(0, 1, 80)
     N_surface_cs, beta_surface_cs = np.meshgrid(N_fit, beta_fit, indexing="ij")
     N_surface_dss, beta_surface_dss = np.meshgrid(N_fit, beta_fit, indexing="ij")
 
@@ -415,22 +408,10 @@ def beta_vs_sigma(N_values, sigmas, params_dict_cs, params_dict_dss):
             params_cs = params_dict_cs[f'params_{sigma}']
             params_dss = params_dict_dss[f'params_{sigma}']
 
-            beta = beta_upper_threshold(
-                N,
-                sigma,
-                params_cs,
-                params_dss,
-                gauss
-            )
-
+            beta = beta_upper_threshold(N, sigma, params_cs, params_dss, gauss)
             beta_values.append(beta)
 
-        plt.plot(
-            sigmas,
-            beta_values,
-            marker="o",
-            label=f"N={N}"
-        )
+        plt.plot( sigmas, beta_values, marker="o", label=f"N={N}")
 
     plt.xlabel(r"$\sigma$")
     plt.ylabel(r"$\beta_{\mathrm{threshold}}$")
