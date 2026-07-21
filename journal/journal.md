@@ -124,7 +124,7 @@ Derived the squeezing fraction threshold $(\beta_{th})$ and optimal squeezing fr
 
 ### Determined the squeezing threshold $(\beta_{th})$ from the simulation
 
-$\beta_{th}$ is determined from the intersection of the fitted error probability surfaces of the CS and DSS protocols. For $0<\beta<\beta_{th}$ the DSS protocol achieves a lower error probability than the CS protocol and is therefore advantageous. The intersection points were fitted against Eq. 8 of the paper, and the estimated parameters deviate less than $1.7\sigma$ from the theoretical predictions. 
+$\beta_{th}(N)$ was determined from the intersection of the fitted error probability surfaces of the CS and DSS protocols. For $0<\beta<\beta_{th}$ the DSS protocol achieves a lower error probability than the CS protocol and is therefore advantageous. The intersection points were fitted against Eq. 8 of the paper, and the estimated parameters deviate less than $1.7\sigma$ from the theoretical predictions. 
 
 ***
 
@@ -143,7 +143,6 @@ This indicates that allocating an optimal fraction of the available energy to sq
 
 ###  Organized all files
 
-***
 
 Arriving at the end of the noise-free protocol signified a good point to organize the existent files and notebooks to make them readable and consistent (e.g. variable names). This establishes a solid workflow which can be followed in the next, more complex protocols such that they can be navigated smoothly.
 
@@ -153,7 +152,7 @@ Arriving at the end of the noise-free protocol signified a good point to organiz
 
 ### Explored theoretical results of the paper 
 
-The next protocol that needs to be investigated is discrimination in the presence of phase noise. To implement this protocol, the theoretical framework of the paper was first studied (Eqs. 18-22). In this protocol the state becomes a statistical mixture of phase rotated CS or DSS. In particular, the state of the noise-free protocol is $|\pm a, r\rangle$ becomes $U_{\phi}|\pm a, r\rangle = |\pm a e^{-i\phi}, r  e^{-i2\phi}\rangle $,  where the phase $\phi$ is sampled from a Gaussian distribution centered at zero with standard deviation $\sigma$.
+The next protocol that needs to be investigated is discrimination in the presence of phase noise. To implement this protocol, the theoretical framework of the paper was first studied (Eqs. 18-22). In this protocol the state becomes a statistical mixture of phase rotated CS or DSS. In particular, the state of the noise-free protocol |±a, r⟩ becomes $U_{\phi}$ |±a, r⟩ = |±a $e^{-i\phi}$, r  $e^{-i2\phi}$⟩,  where the phase $\phi$ is sampled from a Gaussian distribution centered at zero with standard deviation $\sigma$.
 
 ***
 
@@ -185,7 +184,7 @@ This expression is evaluated numerically using Gauss-Hermite quadrature for each
 
 ### Compared the obtained error probability plots with those in the reference paper
 
-The simulated error probability surfaces were compared with those presented in the reference paper (Fig. 2) and showed excellent agreement over the investigated regions. As $\sigma$ grows from zero, the corresponding surface of CS/DSS error probabilities are shifted upwards, and the minimum of the DSS surface is shifted towards lower $\beta$ values. This observation indicates that for a fixed $N$, lower amount of squeezing is required to achieve the minimum error probability when $\sigma$ is increased.
+The simulated error probability surfaces were compared with those presented in the reference paper (Fig. 2) and showed excellent agreement over the investigated regions. As $\sigma$ grows from zero, the corresponding surfaces of CS/DSS error probabilities are shifted upwards, and the minimum of the DSS surface is shifted towards lower $\beta$ values. This observation indicates that for a fixed $N$, lower amount of squeezing is required to achieve the minimum error probability when $\sigma$ is increased.
 
 ***
 
@@ -205,8 +204,10 @@ To  theoretically validate the $\beta_{th}$ points taken from the intersection o
 
 From the DSS fitted error probability surface, the minimum value for each average photon number was extracted to determine $\beta_{opt}(N)$ for different values of $\sigma$. The results verify the aforementioned expectations.
 
+***
+
 ## Next steps:
 - Investigate Helstrom bound in CS/DSS phase diffusion protocol
 - Compare CS/DSS Helstrom bound to the corresponding error probability 
-- Investigate $\beta_{th}$ as a function of $\sigma$ for constant values of N and vice versa
+- Investigate $\beta_{th}$ as a function of $\sigma$ for constant values of N 
 - Complete phase diffusion protocol by organizing files and ensuring smooth workflow
