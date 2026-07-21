@@ -101,7 +101,7 @@ The produced data seem to follow well the derived error probability for both pro
     
 - Started phase-diffusion protocol:
     - Explored theoretical results of the paper 
-    - Implemented phase-diffusion protocol in SF and produced data for different sigmas 
+    - Implemented phase-diffusion protocol in SF software and produced data for different $\sigma$ 
 
 
 ***
@@ -159,7 +159,7 @@ The next protocol that needs to be investigated is discrimination in the presenc
 
 ### Implemented phase-diffusion protocol in SF and produced data for different sigmas 
 
-To model phase diffusion, a large number of the aforementioned states are generated, the corresponding homodyne measurement is performed, and the measurements are averaged over all sampled phases. This procedure is repeated for different values of $\sigma$ to investigate how increasing phase noise affects the error probability.
+To model phase diffusion, a large number of the aforementioned states are generated, homodyne measurement is performed, and the measurements are averaged over all sampled phases. This procedure is repeated for different values of $\sigma$ to investigate how increasing phase noise affects the error probability.
 
 ***
 
