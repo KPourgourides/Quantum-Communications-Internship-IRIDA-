@@ -143,7 +143,7 @@ def fit_homodyne_perr(sigmas, print_params=False, cs=False, dss=False, data=Fals
     gauss = hermgauss(n_gh)
 
     fig = go.Figure()
-    colors = [ "#1f77b4",  "#d62728",  "#2ca02c",  "#ff7f0e",  "#9467bd",  "#17becf",  "#e377c2",  "#8c564b",  "#bcbd22",  "#7f7f7f",  "#5af74b"]
+    colors = [ "#1f77b4",  "#d62728",  "#2ca02c",  "#ff7f0e",  "#9467bd",  "#17becf",  "#e377c2",  "#8c564b",  "#bcbd22",  "#7f7f7f",  "#5af74b"]*2
     
     #------------------  CS  ------------------
     params_dict_cs = {}
@@ -208,7 +208,7 @@ def fit_homodyne_perr(sigmas, print_params=False, cs=False, dss=False, data=Fals
     # Plotly figure
     #===============================
 
-    colors = ["#0C3858",  "#6F3434",  "#084108",  "#ff7f0e",  "#460880",  "#0c6f7c",  "#5c0642",  "#941c04",  "#8b8b06",  "#212121",  "#092a06",  "#092a06"]
+    colors = ["#0C3858",  "#6F3434",  "#084108",  "#ff7f0e",  "#460880",  "#0c6f7c",  "#5c0642",  "#941c04",  "#8b8b06",  "#212121",  "#092a06",  "#092a06"]*2
 
     #------------------  DSS  ------------------
     params_dict_dss = {}
@@ -276,24 +276,29 @@ def beta_threshold_theory(N:float, sigma:float, params_cs:tuple, params_dss:tupl
     '''
     Solves the equation F(β_th) = theory_point_dss - theory_point_cs = 0 for a fixed value of N and σ,
     given the fitted parameters of the models. 
-    The search for the root is conducted in the interval (β_min, 1) to ensure that the first root for N=0 is not considered.
+    The search for the root is conducted in the interval (β_min, 1) to ensure that the first root for β=0 is not considered,
+    where dF(β_min)/dβ = 0.
     '''
-    pcs = theory_point_cs(N, sigma, params_cs, gauss)
+    point_cs = theory_point_cs(N, sigma, params_cs, gauss)
+    
     def F(beta):
-        return theory_point_dss(N, beta, sigma, params_dss, gauss) - pcs
-
+        
+        point_dss = theory_point_dss(N, beta, sigma, params_dss, gauss) 
+        return point_dss - point_cs
+    
     # sample to locate minimum
-    beta_grid = np.linspace(0,1,500)
+    beta_grid = np.linspace(0, 1, 500)
     F_b = np.array([F(b) for b in beta_grid])
 
-    idx_min = np.argmin(F_b)
-    beta_min = beta_grid[idx_min]
+    beta_min = beta_grid[np.argmin(F_b)]
+    beta_max = 1
 
-    if F(beta_min)*F(1)>0:
-        return np.nan
+    try:
+        beta_upper = brentq(F, beta_min, beta_max)
+        return beta_upper
     
-    beta_upper = brentq(F, beta_min, 1.0)
-    return beta_upper
+    except:
+        return np.nan
 
 
 def check_beta_th(N:float, sigma:float, params_cs:tuple, params_dss:tuple):
@@ -305,26 +310,21 @@ def check_beta_th(N:float, sigma:float, params_cs:tuple, params_dss:tuple):
     n_gh = 100
     gauss = hermgauss(n_gh)
 
-    pcs = theory_point_cs(N, sigma, params_cs, gauss)
+    point_cs = theory_point_cs(N, sigma, params_cs, gauss)
+    
     def F(beta):
-        return theory_point_dss(N, beta, sigma, params_dss, gauss) - pcs
+        
+        point_dss = theory_point_dss(N, beta, sigma, params_dss, gauss) 
+        return point_dss - point_cs
 
     beta_grid = np.linspace(0, 1, 500)
     F_b = np.array([F(b) for b in beta_grid])
 
     idx_min = np.argmin(F_b) 
+    beta_min = beta_grid[idx_min]
+    beta_max = 1
 
-    print("========== CHECK BETA ==========")
-    print("N =", N)
-    print()
-    print("beta minimum =", beta_grid[idx_min])
-    print("F(beta_min) =", F_b[idx_min])
-    print("F(0) =", F(0))
-    print("F(1) =", F(1))
-    print()
-    print("Sign condition:")
-    print("F(beta_min)*F(1) =", F_b[idx_min]*F(1))
-    print("===============================")
+    print(f"Sign condition: {np.sign(F_b[idx_min]*F(beta_max))}")
 
     plt.figure(figsize=(6,4))
     plt.plot(beta_grid, F_b)
@@ -338,8 +338,8 @@ def check_beta_th(N:float, sigma:float, params_cs:tuple, params_dss:tuple):
 
 def optimal_squeezing(sigmas, params_dict_cs, params_dict_dss, opt = False, th = False):
 
-    colors_th = [ "#1f77b4",  "#d62728",  "#2ca02c",  "#ff7f0e",  "#9467bd",  "#17becf",  "#e377c2",  "#8c564b",  "#bcbd22",  "#7f7f7f", "#5af74b"]
-    colors_opt = ["#0C3858",  "#6F3434",  "#084108",  "#ff7f0e",  "#460880",  "#0c6f7c",  "#5c0642",  "#941c04",  "#8b8b06",  "#212121", "#092a06"]
+    colors_th = [ "#1f77b4",  "#d62728",  "#2ca02c",  "#ff7f0e",  "#9467bd",  "#17becf",  "#e377c2",  "#8c564b",  "#bcbd22",  "#7f7f7f", "#5af74b"]*2
+    colors_opt = ["#0C3858",  "#6F3434",  "#084108",  "#ff7f0e",  "#460880",  "#0c6f7c",  "#5c0642",  "#941c04",  "#8b8b06",  "#212121", "#092a06"]*2
     n_gh = 100
     gauss = hermgauss(n_gh)
 
@@ -400,7 +400,7 @@ def optimal_squeezing(sigmas, params_dict_cs, params_dict_dss, opt = False, th =
 
 
 
-def beta_vs_sigma(N_values, sigmas, params_dict_cs, params_dict_dss):
+def beta_vs_sigma(N_values:np.array, sigmas:np.array, params_dict_cs:dict, params_dict_dss:dict):
 
     n_gh = 100
     gauss = hermgauss(n_gh)
@@ -409,19 +409,25 @@ def beta_vs_sigma(N_values, sigmas, params_dict_cs, params_dict_dss):
 
     for N in N_values:
 
-        beta_values = []
+        beta_th_values = []
 
         for sigma in sigmas:
 
             params_cs = params_dict_cs[f'params_{sigma}']
             params_dss = params_dict_dss[f'params_{sigma}']
 
-            beta = beta_threshold_theory(N, sigma, params_cs, params_dss, gauss)
-            if np.isnan(beta):
-                beta = 0
-            beta_values.append(beta)
-        plt.plot(sigmas, beta_values, marker="o", label=f"N={N}")
+            beta_th = beta_threshold_theory(N, sigma, params_cs, params_dss, gauss)
 
+            if np.isnan(beta_th):
+                beta_th = 0
+
+            beta_th_values.append(beta_th)
+
+        plt.plot(sigmas, beta_th_values, marker="o", label=f"N={N}")
+        plt.fill_between(sigmas, beta_th_values, 0, alpha=0.3)
+
+    plt.ylim(-0.01, 1.01)
+    plt.xlim(-0.01, 1.01)
     plt.xlabel(r"$\sigma$")
     plt.ylabel(r"$\beta_{\mathrm{threshold}}$")
     plt.legend()
