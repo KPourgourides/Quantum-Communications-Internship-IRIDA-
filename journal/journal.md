@@ -9,7 +9,7 @@ We will study the phase-shift-keyed (PSK) binary communication protocol, where i
 
 In this project we will follow closely the research paper [“Squeezing-enhanced phase-shift-keyed binary communication in noisy channels”](https://arxiv.org/abs/1710.09577) and try to reproduce their analytical results using the Strawberry Fields quantum photonic simulation framework. This implementation will provide an independent numerical validation of the reported results and enable systematic exploration of the protocol under different settings.
 
-## Week 1 Overview (July 1–8) 
+## Week 1 Overview (July 1-8) 
 
 ***
 - Defined Objectives/Plan for project
@@ -88,7 +88,7 @@ The produced data seem to follow well the derived error probability for both pro
 - Determine the optimal squeezing fraction $(\beta_{opt})$
 - Compare the error probability of both protocols with the corresponding Helstrom bound
 
-## Week 2 Overview (July 8–15) 
+## Week 2 Overview (July 8-15) 
 
 ***
 - Completed noise-free protocol:
