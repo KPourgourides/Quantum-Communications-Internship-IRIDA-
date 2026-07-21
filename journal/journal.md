@@ -101,7 +101,7 @@ The produced data seem to follow well the derived error probability for both pro
     
 - Started phase-diffusion protocol:
     - Explored theoretical results of the paper 
-    - Implemented phase-diffusion protocol in SF and produced data for different sigmas 
+    - Implemented phase-diffusion protocol in SF software and produced data for different $\sigma$ 
 
 
 ***
@@ -124,19 +124,19 @@ Derived the squeezing fraction threshold $(\beta_{th})$ and optimal squeezing fr
 
 ### Determined the squeezing threshold $(\beta_{th})$ from fitted data
 
-From the intersection of the fitted error probability surfaces of the CS and DSS protocols, $\beta_{th}$ is determined. For $0<\beta<\beta_{th}$ the DSS protocol achieves a lower error probability than the CS protocol and is therefore advantageous. The intersection points are fitted against Eq. 8 and the found parameters deviate less than $1.7\sigma$ from theoretical predictions. 
+From the intersection of the fitted error probability surfaces of the CS and DSS protocols, $\beta_{th}$ is determined. For $0<\beta<\beta_{th}$ the DSS protocol achieves a lower error probability than the CS protocol and is therefore advantageous. The intersection points were fitted against Eq. 8 and the found parameters deviate less than $1.7\sigma$ from theoretical predictions. 
 
 ***
 
 ### Determined the optimal squeezing fraction $(\beta_{opt})$ from fitted data
 
-From the DSS fitted error probability surface, the minimum value for each average photon number was extracted to determine $\beta_{opt}(N)$. The points are fitted against Eq. 8 and the found parameters deviate less than $0.9\sigma$ from theoretical predictions. 
+From the DSS fitted error probability surface, the minimum value for each average photon number was extracted to determine $\beta_{opt}(N)$. The points were fitted against Eq. 8 and the found parameters deviate less than $0.9\sigma$ from theoretical predictions. 
 
 ***
 
 ### Compared the error probability of CS and DSS protocol with the corresponding Helstrom bound
 
-Visualised Helstrom bound for CS and DSS protocol (Eq. 5) and measured the distance from the corresponding error probability ($\beta=\beta_{opt}$ in DSS protocol). The results show that the DSS protocol is always closer or approximately as close to the corresponding Helstrom bound  than CS. This indicates that allocating an optimal fraction of the available energy to squeezing, rather than entirely to displacement, improves the discrimination performance.
+Visualised Helstrom bound for CS and DSS protocol (Eq. 5) and quantified the deviation from the corresponding error probability ($\beta=\beta_{opt}$ in DSS protocol). The results show that the DSS error probability is almost always closer to the corresponding Helstrom bound than the CS case. This indicates that allocating an optimal fraction of the available energy to squeezing, rather than entirely to displacement, can reach better the ultimate bounds of discrimination.
 
 ***
 
@@ -152,13 +152,13 @@ Arriving at the end of the noise-free protocol signified a good point to organiz
 
 ### Explored theoretical results of the paper 
 
-The next protocol that needs to be investigated is discrimination in the presence of phase noise. To implement this protocol, the theoretical framework of the paper was first studied (Eqs. 18-22). In this protocol the state becomes a statistical mixture of phase rotated CS or DSS. $\sigma^2$. In particullar, the state of the noise-free protocol $|\pm a, r \rangle $ becomes $U_{\phi}|\pm a, r \rangle = |\pm a e^{-i\phi}, r  e^{-i2\phi}\rangle $,  where the phase $\phi$ is sampled from a Gaussian distribution centered at zero with standard deviation $\sigma$.
+The next protocol that needs to be investigated is discrimination in the presence of phase noise. To implement this protocol, the theoretical framework of the paper was first studied (Eqs. 18-22). In this protocol the state becomes a statistical mixture of phase rotated CS or DSS. In particular, the state of the noise-free protocol $|\pm a, r \rangle $ becomes $U_{\phi}|\pm a, r \rangle = |\pm a e^{-i\phi}, r  e^{-i2\phi}\rangle $,  where the phase $\phi$ is sampled from a Gaussian distribution centered at zero with standard deviation $\sigma$.
 
 ***
 
 ### Implemented phase-diffusion protocol in SF and produced data for different sigmas 
 
-To model phase diffusion, a large number of the aforementioned states are generated, the corresponding homodyne measurement is performed, and the measurements are averaged over all sampled phases. This procedure is repeated for different values of $\sigma$ to investigate how increasing phase noise affects the error probability.
+To model phase diffusion, a large number of the aforementioned states are generated, homodyne measurement is performed, and the measurements are averaged over all sampled phases. This procedure is repeated for different values of $\sigma$ to investigate how increasing phase noise affects the error probability.
 
 Data was produced with success for 10 different $\sigma$: One surface of fixed $\sigma$ needs ~2.5hrs for 1600 points averaged over 10000 sampled phases each.
 
@@ -186,7 +186,7 @@ This expression is evaluated numerically using Gauss-Hermite quadrature for each
 
 ### Compared the obtained error probability plots with those in the reference paper
 
-The simulated error probability surfaces were compared with those presented in the reference paper (Fig. 2) and showed excellent qualitative and quantitative agreement over the investigated regions. For a larger $\sigma$, the corresponding surface of CS/DSS are shifted upwards, and the minimum of the DSS surface is shifted towards lower $\beta$ values compared to the lower-noise case. This observation indicates that for a fixed N, lower amount of squeezing is requiredd to achieve the minimum error probability, when the noise parameter is increased.
+The simulated error probability surfaces were compared with those presented in the reference paper (Fig. 2) and showed excellent qualitative and quantitative agreement over the investigated regions. For a larger $\sigma$, the CS/DSS surface is shifted upwards, and the minimum of the DSS surface is shifted towards lower $\beta$ values compared to the lower-noise case. This observation indicates that for a fixed N, lower amount of squeezing is required to achieve the minimum error probability, when the noise parameter is increased.
 
 ***
 
@@ -205,3 +205,11 @@ To validate theoretically the $\beta_{th}$ points taken from the intersection of
 ### Determined the optimal squeezing fraction $(\beta_{opt})$ from fitted data for different values of $\sigma$
 
 From the DSS fitted error probability surface, the minimum value for each average photon number was extracted to determine $\beta_{opt}(N)$ for different values of $\sigma$. The results verify the aforementioned expectations.
+
+*** 
+
+### Next steps:
+- Investigate Helstrom bound in CS/DSS phase diffusion protocol
+- Compare CS/DSS Helstrom bound to the corresponding error probability 
+- Produce data for more $\sigma$
+- Complete phase diffusion protocol by organizing files and ensuring smooth workflow
