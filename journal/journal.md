@@ -16,7 +16,7 @@ In this project we will follow closely the research paper [“Squeezing-enhanced
 - Read reference paper & studied theoretical background  
 - Familiarized with Strawberry Fields (SF) software  
 - Prepared helper functions for state visualisation and measurement in SF  
-- Implemented coherent-state (CS) and displaced-squeezed-state (DSS)  communication protocols for a noise-free channel.
+- Implemented coherent-state (CS) and displaced-squeezed-state (DSS)  communication protocols for a noise-free channel
 - Derived analytically the expected probability error  
 - Visualised the error probability for the aforementioned protocols and fitted it to the derived probability error
 
@@ -152,20 +152,56 @@ Arriving at the end of the noise-free protocol signified a good point to organiz
 
 ### Explored theoretical results of the paper 
 
+The next protocol that needs to be investigated is discrimination in the presence of phase noise. To implement this protocol, the theoretical framework of the paper was first studied (Eqs. 18-22). In this protocol the state becomes a statistical mixture of phase rotated CS or DSS. $\sigma^2$. In particullar, the state of the noise-free protocol $|\pm a, r \rangle $ becomes $U_{\phi}|\pm a, r \rangle = |\pm a e^{-i\phi}, r  e^{-i2\phi}\rangle $,  where the phase $\phi$ is sampled from a Gaussian distribution centered at zero with standard deviation $\sigma$.
 
 ***
 
 ### Implemented phase-diffusion protocol in SF and produced data for different sigmas 
 
+To model phase diffusion, a large number of the aforementioned states are generated, the corresponding homodyne measurement is performed, and the measurements are averaged over all sampled phases. This procedure is repeated for different values of $\sigma$ to investigate how increasing phase noise affects the error probability.
+
+Data was produced with success for 10 different $\sigma$: One surface of fixed $\sigma$ needs ~2.5hrs for 1600 points averaged over 10000 sampled phases each.
+
 ***
 
 ## Week 3 Overview (July 15-22) 
 
-- Continued phase-diffusion protocol:
-    - Fitted theoretical predictions of Perr on data for different phase-diffusion $\sigma$
-    - Determined the squeezing threshold for which the DSS protocol outperforms the CS protocol $(\beta_{th})$ for different $\sigma$
-    - Determined the optimal squeezing fraction $(\beta_{opt})$ for different $\sigma$
 
-- To do:
-    - Find helstrom bound for cs and dss
-    - Find an accurate analytical function to fit data for $(\beta_{th})$ and $(\beta_{opt})$
+- Fitted theoretical predictions of Perr on data for different values of the noise-parameter $\sigma$ in phase-diffused CS/DSS protocol 
+- Compared the obtained error probability plots with those in the reference paper
+- Determined the squeezing threshold $(\beta_{th})$ from fitted data for different values of $\sigma$
+- Found $(\beta_{th})$ using theoretical expressions
+- Determined the optimal squeezing fraction $(\beta_{opt})$ from fitted data for different values of $\sigma$
+
+
+***
+
+### Fitted theoretical predictions of $P_{err}$ on data for different values of the noise-parameter $\sigma$
+
+The theoretical predictions of $P_{err}$ have a more complex form in comparison to the noise-free model, as now there is an additional integral over the phase (Eq. 21). 
+
+This expression is evaluated numerically using Gauss-Hermite quadrature for each (N, $\beta$) pair and the fitted parameters are obtained through fit which minimizes the difference between the analytical predictions and all simulated data points simultaneously.
+
+***
+
+### Compared the obtained error probability plots with those in the reference paper
+
+The simulated error probability surfaces were compared with those presented in the reference paper (Fig. 2) and showed excellent qualitative and quantitative agreement over the investigated regions. For a larger $\sigma$, the corresponding surface of CS/DSS are shifted upwards, and the minimum of the DSS surface is shifted towards lower $\beta$ values compared to the lower-noise case. This observation indicates that for a fixed N, lower amount of squeezing is requiredd to achieve the minimum error probability, when the noise parameter is increased.
+
+***
+
+### Determined the squeezing threshold $(\beta_{th})$ from fitted data for different values of $\sigma$
+
+From the intersection of the fitted error probability surfaces of the CS and DSS protocols, $\beta_{th}$ is determined. The curve of $\beta_{th}(N)$ shifts to lower values for larger $\sigma$, indicating that noisier channels reduce the range of squeezing for which the DSS protocol can outperform the CS protocol.
+
+***
+
+### Found $\beta_{th}$ using theoretical expressions
+
+To validate theoretically the $\beta_{th}$ points taken from the intersection of the surfaces, the equation $P^{DSS}_{err}-P^{CS}_{err}=0$ was solved numerically using the parameters found in the previous steps. The roots were found using [Brent's method](https://en.wikipedia.org/wiki/Brent%27s_method) as provided from the Scipy library. The resulting threshold values were found to be in excellent agreement with those extracted directly from the contour corresponding to the intersection of the fitted surfaces.
+
+***
+
+### Determined the optimal squeezing fraction $(\beta_{opt})$ from fitted data for different values of $\sigma$
+
+From the DSS fitted error probability surface, the minimum value for each average photon number was extracted to determine $\beta_{opt}(N)$ for different values of $\sigma$. The results verify the aforementioned expectations.
