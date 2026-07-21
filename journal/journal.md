@@ -153,7 +153,7 @@ Arriving at the end of the noise-free protocol signified a good point to organiz
 
 ### Explored theoretical results of the paper 
 
-The next protocol that needs to be investigated is discrimination in the presence of phase noise. To implement this protocol, the theoretical framework of the paper was first studied (Eqs. 18-22). In this protocol the state becomes a statistical mixture of phase rotated CS or DSS. In particular, the state of the noise-free protocol $|\pm a, r \rangle $ becomes $U_{\phi}|\pm a, r \rangle = |\pm a e^{-i\phi}, r  e^{-i2\phi}\rangle $,  where the phase $\phi$ is sampled from a Gaussian distribution centered at zero with standard deviation $\sigma$.
+The next protocol that needs to be investigated is discrimination in the presence of phase noise. To implement this protocol, the theoretical framework of the paper was first studied (Eqs. 18-22). In this protocol the state becomes a statistical mixture of phase rotated CS or DSS. In particular, the state of the noise-free protocol $\ket{\pm a, r}$ becomes $U_{\phi}\ket{\pm a, r} = \ket{\pm a e^{-i\phi}, r  e^{-i2\phi}} $,  where the phase $\phi$ is sampled from a Gaussian distribution centered at zero with standard deviation $\sigma$.
 
 ***
 
