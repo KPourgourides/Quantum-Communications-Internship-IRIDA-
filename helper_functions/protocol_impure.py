@@ -9,3 +9,4 @@ import plotly.graph_objects as go
 from numpy.polynomial.hermite import hermgauss
 import matplotlib.pyplot as plt
 from scipy.optimize import brentq
+
