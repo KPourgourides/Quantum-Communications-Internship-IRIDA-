@@ -336,7 +336,7 @@ def check_beta_th(N:float, sigma:float, params_cs:tuple, params_dss:tuple):
     plt.show()
 
 
-def optimal_squeezing(sigmas, params_dict_cs, params_dict_dss, opt = False, th = False):
+def optimal_squeezing(sigmas, params_dict_cs, params_dict_dss, opt = False, th = False) -> dict:
 
     colors_th = [ "#1f77b4",  "#d62728",  "#2ca02c",  "#ff7f0e",  "#9467bd",  "#17becf",  "#e377c2",  "#8c564b",  "#bcbd22",  "#7f7f7f", "#5af74b"]*2
     colors_opt = ["#0C3858",  "#6F3434",  "#084108",  "#ff7f0e",  "#460880",  "#0c6f7c",  "#5c0642",  "#941c04",  "#8b8b06",  "#212121", "#092a06"]*2
@@ -344,11 +344,14 @@ def optimal_squeezing(sigmas, params_dict_cs, params_dict_dss, opt = False, th =
     gauss = hermgauss(n_gh)
 
     plt.figure(figsize=(15,6), dpi=300)
+
     #---------- FIND THRESHOLD ----------
-    N_fit = np.linspace(0, 2, 80)
-    beta_fit = np.linspace(0, 1, 80)
+    N_fit = np.linspace(0, 2, 81)
+    beta_fit = np.linspace(0, 1, 81)
     N_surface_cs, beta_surface_cs = np.meshgrid(N_fit, beta_fit, indexing="ij")
     N_surface_dss, beta_surface_dss = np.meshgrid(N_fit, beta_fit, indexing="ij")
+
+    beta_opt_dict = {}
 
     for i,sigma in enumerate(sigmas):
         params_cs = params_dict_cs[f'params_{sigma}']
@@ -374,11 +377,12 @@ def optimal_squeezing(sigmas, params_dict_cs, params_dict_dss, opt = False, th =
 
         # Minima along beta for each N
         idx = np.argmin(z_surface_dss, axis=1)   
-        beta_min = beta_fit[idx]
+        beta_opt = beta_fit[idx]
+        beta_opt_dict[f'sigma_{sigma}'] = beta_opt
         
         # Find theoretical values for β_th
         beta_th = []
-        N_th = np.linspace(0, 2, 100)
+        N_th = np.linspace(0, 2, 101)
         for N in N_th:
             beta_th.append(beta_threshold_theory(N, sigma, params_cs, params_dss, gauss))
         beta_th = np.array(beta_th)
@@ -387,8 +391,9 @@ def optimal_squeezing(sigmas, params_dict_cs, params_dict_dss, opt = False, th =
             plt.scatter(N_intersection[mask], beta_intersection[mask], s=30, edgecolors='k', color=colors_th[i], marker='D', zorder=10, label = f'σ={sigma:0.1f}')
             plt.fill_between(N_intersection[mask], beta_intersection[mask], 0, alpha=0.8, zorder=0, color=colors_th[i])
             plt.plot(N_th, beta_th, color='k', linewidth = 3)
+
         if opt:
-            plt.scatter(N_fit, beta_min, color=colors_opt[i], edgecolors='k', s=50, marker='H', zorder=10)
+            plt.scatter(N_fit, beta_opt, color=colors_opt[i], edgecolors='k', s=50, marker='H', zorder=10)
             if not th:
                  plt.ylim(0, 0.3)
         
@@ -396,7 +401,12 @@ def optimal_squeezing(sigmas, params_dict_cs, params_dict_dss, opt = False, th =
         plt.ylabel(r'$\beta$ (Squeezing Fraction)')
         if th:
             plt.legend()
+
         plt.tight_layout()
+    plt.show()
+        
+
+    return beta_opt_dict
 
 
 
@@ -434,3 +444,96 @@ def beta_vs_sigma(N_values:np.array, sigmas:np.array, params_dict_cs:dict, param
     plt.grid()
     plt.tight_layout()
     plt.show()
+
+
+def helstrom_bound(N:float, beta_opt_dict:dict, sigmas:np.array, fock_cutoff:int):
+
+    N_grid = np.linspace(0, 2, 81)
+
+    if beta_opt_dict == 0:
+        beta_opt_array = np.zeros((len(sigmas)))
+    else:
+        beta_opt_array = np.zeros((len(sigmas)))
+
+        for i,sigma in enumerate(sigmas):
+
+            beta_opt_array[i] = beta_opt_dict[f"sigma_{sigma}"][np.where(N_grid == N)[0][0]]
+
+
+    alpha = np.sqrt(N*(1-beta_opt_array)) 
+    r_opt = np.arcsinh(np.sqrt(N*beta_opt_array))
+
+    def state(alpha, r, phi):
+
+        prog = sf.Program(1)
+        with prog.context as q:
+            Vac | q[0]
+            Sgate(r) | q[0] 
+            Dgate(alpha) | q[0]
+            Rgate(phi) | q
+        #run the engine and get the state
+        eng = sf.Engine("fock", backend_options={"cutoff_dim": fock_cutoff})
+        result = eng.run(prog)
+        return result.state.dm()
+    
+    n_gh = 100
+    gauss = hermgauss(n_gh)
+    x, w = gauss
+    p_helstrom = np.zeros((len(sigmas)))
+
+    for j,sigma in enumerate(sigmas):
+
+        phis = np.sqrt(2)*sigma*x
+        rho_1 = 0
+        rho_2 = 0
+
+        for i,phi in enumerate(phis):
+            rho_1 +=  w[i]*state(alpha[j], r_opt[j], phis[i])/np.sqrt(np.pi)
+            rho_2 +=  w[i]*state(-1*alpha[j], r_opt[j], phis[i])/np.sqrt(np.pi)
+
+        Delta = rho_1 - rho_2
+        eigenvals = np.linalg.eigvalsh(Delta)
+        trace_norm = np.sum(np.abs(eigenvals))
+
+        p_helstrom[j] = 0.5*(1 - 0.5*trace_norm)
+    
+    return p_helstrom
+
+def perr_dss_vs_sigma(N:float, beta_opt_dict, sigmas:np.array, params_dict_dss:dict):
+
+    N_grid = np.linspace(0, 2, 81)
+    p_dss = np.zeros((len(sigmas)))
+    beta_opt_array = np.zeros((len(sigmas)))
+
+    n_gh = 100
+    x, w = hermgauss(n_gh)
+
+    for i, sigma in enumerate(sigmas):
+
+        beta_opt_array[i] = beta_opt_dict[f"sigma_{sigma}"][np.where(N_grid == N)[0][0]]
+
+        p_dss[i] = theory_point_dss(N=N, beta = beta_opt_array[i], sigma = sigma, params = params_dict_dss[f'params_{sigma}'], gauss = (x, w))
+
+    return p_dss
+
+def perr_vs_sigma(N:float, beta_opt_dict, sigmas:np.array, params_dict:dict, cs:bool):
+
+    N_grid = np.linspace(0, 2, 81)
+    p = np.zeros((len(sigmas)))
+    beta_opt_array = np.zeros((len(sigmas)))
+
+    n_gh = 100
+    x, w = hermgauss(n_gh)
+
+    if cs:
+        for i, sigma in enumerate(sigmas):
+        
+            p[i] = theory_point_cs(N=N, sigma = sigma, params = params_dict[f'params_{sigma}'], gauss = (x, w))
+    else:
+
+        for i, sigma in enumerate(sigmas):
+        
+            beta_opt_array[i] = beta_opt_dict[f"sigma_{sigma}"][np.where(N_grid == N)[0][0]]
+            p[i] = theory_point_dss(N=N, beta = beta_opt_array[i], sigma = sigma, params = params_dict[f'params_{sigma}'], gauss = (x, w))
+
+    return p
