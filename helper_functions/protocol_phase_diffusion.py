@@ -143,7 +143,7 @@ def fit_homodyne_perr(sigmas, print_params=False, cs=False, dss=False, data=Fals
     gauss = hermgauss(n_gh)
 
     fig = go.Figure()
-    colors = [ "#1f77b4",  "#d62728",  "#2ca02c",  "#ff7f0e",  "#9467bd",  "#17becf",  "#e377c2",  "#8c564b",  "#bcbd22",  "#7f7f7f",  "#5af74b"]*2
+    colors = [ "#e9f063",  "#d62728",  "#2ca02c",  "#ff7f0e",  "#9467bd",  "#17becf",  "#e377c2",  "#8c564b",  "#bcbd22",  "#7f7f7f",  "#5af74b"]*2
     
     #------------------  CS  ------------------
     params_dict_cs = {}
@@ -208,7 +208,7 @@ def fit_homodyne_perr(sigmas, print_params=False, cs=False, dss=False, data=Fals
     # Plotly figure
     #===============================
 
-    colors = ["#0C3858",  "#6F3434",  "#084108",  "#ff7f0e",  "#460880",  "#0c6f7c",  "#5c0642",  "#941c04",  "#8b8b06",  "#212121",  "#092a06",  "#092a06"]*2
+    colors = ["#8E9C09",  "#6F3434",  "#084108",  "#ff7f0e",  "#460880",  "#0c6f7c",  "#5c0642",  "#941c04",  "#8b8b06",  "#212121",  "#092a06",  "#092a06"]*2
 
     #------------------  DSS  ------------------
     params_dict_dss = {}
@@ -336,18 +336,28 @@ def check_beta_th(N:float, sigma:float, params_cs:tuple, params_dss:tuple):
     plt.show()
 
 
+from scipy.optimize import minimize_scalar
+
+def beta_opt_theory(N, sigma, params_dss, gauss):
+
+    def objective(beta):
+        return theory_point_dss( N, beta, sigma, params_dss, gauss)
+
+    res = minimize_scalar( objective, bounds=(0,1), method="bounded")
+    return res.x
+
 def optimal_squeezing(sigmas, params_dict_cs, params_dict_dss, opt = False, th = False) -> dict:
 
     colors_th = [ "#1f77b4",  "#d62728",  "#2ca02c",  "#ff7f0e",  "#9467bd",  "#17becf",  "#e377c2",  "#8c564b",  "#bcbd22",  "#7f7f7f", "#5af74b"]*2
-    colors_opt = ["#0C3858",  "#6F3434",  "#084108",  "#ff7f0e",  "#460880",  "#0c6f7c",  "#5c0642",  "#941c04",  "#8b8b06",  "#212121", "#092a06"]*2
+    colors_opt = ["#2ca02c","#1f77b4", "#bcbd22","#d62728" ,"#0C3858",  "#6F3434",  "#084108",  "#ff7f0e",  "#460880",  "#0c6f7c",  "#5c0642",  "#941c04",  "#8b8b06",  "#212121", "#092a06"]*2
     n_gh = 100
     gauss = hermgauss(n_gh)
 
     plt.figure(figsize=(15,6), dpi=300)
 
     #---------- FIND THRESHOLD ----------
-    N_fit = np.linspace(0, 2, 81)
-    beta_fit = np.linspace(0, 1, 81)
+    N_fit = np.linspace(0, 2, 101)
+    beta_fit = np.linspace(0, 1, 101)
     N_surface_cs, beta_surface_cs = np.meshgrid(N_fit, beta_fit, indexing="ij")
     N_surface_dss, beta_surface_dss = np.meshgrid(N_fit, beta_fit, indexing="ij")
 
@@ -378,6 +388,10 @@ def optimal_squeezing(sigmas, params_dict_cs, params_dict_dss, opt = False, th =
         # Minima along beta for each N
         idx = np.argmin(z_surface_dss, axis=1)   
         beta_opt = beta_fit[idx]
+        beta_opt_line = np.zeros_like(N_fit)
+
+        for idx, N in enumerate(N_fit):
+            beta_opt_line[idx] = beta_opt_theory(N, sigma, params_dss, gauss)
         beta_opt_dict[f'sigma_{sigma}'] = beta_opt
         
         # Find theoretical values for β_th
@@ -393,9 +407,11 @@ def optimal_squeezing(sigmas, params_dict_cs, params_dict_dss, opt = False, th =
             plt.plot(N_th, beta_th, color='k', linewidth = 3)
 
         if opt:
-            plt.scatter(N_fit, beta_opt, color=colors_opt[i], edgecolors='k', s=50, marker='H', zorder=10)
+            plt.scatter(N_fit, beta_opt, color=colors_opt[i], edgecolors='k', s=50, marker='H', zorder=10, label = f'σ={sigma}')
+            plt.plot(N_fit[1:], beta_opt_line[1:], color='k', linewidth = 3)
             if not th:
-                 plt.ylim(0, 0.3)
+                 #plt.ylim(0, 0.5)
+                 plt.legend()
         
         plt.xlabel(r'$N$ (Average number of photons)')
         plt.ylabel(r'$\beta$ (Squeezing Fraction)')
