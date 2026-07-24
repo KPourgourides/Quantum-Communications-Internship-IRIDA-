@@ -8,66 +8,38 @@ from scipy.special import erfc
 from scipy.optimize import brentq, minimize_scalar
 import plotly.graph_objects as go
 from helper_functions.state_measurement import *
+import random
 
-def perr_cs(alpha_grid:np.array, sigma:float, num_samples:int) -> np.array:
+def perr_cs(alpha_grid:np.array, sigma:float, num_samples:int, strawberry:bool=False) -> np.array:
     '''
     Experimental calculation of the homodyne error probability for coherent states
     '''
-    # Calculation of error probability
-    #============================================
-    p_err = np.zeros((len(alpha_grid)))
-    
-    for i in range(len(alpha_grid)):
-
-        # Choose phase from Gaussian distribution
-        #============================================
-        phis = np.random.normal(0, sigma, size = num_samples) 
-        wrong_sign_counter = 0
-
-        for phi in phis:
-
-            coherent_sign = np.random.choice([1, -1])
-            prog = sf.Program(1)
-
-            with prog.context as q:
-                Dgate(coherent_sign*alpha_grid[i]) | q
-                Rgate(phi) | q
-                MeasureHomodyne(0) | q
-
-            eng = sf.Engine("gaussian")
-            result = eng.run(prog)
-            result_sign = np.sign(result.samples[0][0])
-
-            if (result_sign>=0 and coherent_sign<0) or (result_sign<0 and coherent_sign>0):
-                    wrong_sign_counter+= 1
-
-        p_err[i] = wrong_sign_counter/num_samples
-
-    return p_err
-
-
-def perr_dss(N_grid:np.array, beta_grid:np.array, sigma:float, num_samples:int) -> np.array:
-    '''
-    Experimental calculation of the homodyne error probability for displaced squeezed states
-    '''
     #Calculation of error probability
     #============================================
-    p_err = np.zeros((len(N_grid), len(beta_grid)))
-    
-    for i, N in enumerate(N_grid):
+    p_err = np.zeros((len(alpha_grid)))
 
-        alphas = np.sqrt(N*(1-beta_grid)) 
-
-        print(f"\rProgress: {i+1}/{len(N_grid)}", end="", flush=True)
+    if not strawberry:
         
-        for k, beta in enumerate(beta_grid):
+        gauss = hermgauss(100)
 
-            wrong_sign_counter = 0
-            r_s = math.asinh(np.sqrt(N*beta))
+        for i, N in enumerate(alpha_grid**2):
+
+            print(f"\rProgress: {i+1}/{len(alpha_grid)}", end="", flush=True)
+
+            p = theory_point_cs(N, sigma, gauss)
+            p_err[i] = np.random.binomial(num_samples, p) / num_samples
+
+    #============================================
+    else:
+
+        eng = sf.Engine("gaussian")
+
+        for i in range(len(alpha_grid)):
 
             # Choose phase from Gaussian distribution
             #============================================
-            phis = np.random.normal(0, sigma, size=num_samples)
+            phis = np.random.normal(0, sigma, size = num_samples) 
+            wrong_sign_counter = 0
 
             for phi in phis:
 
@@ -75,21 +47,83 @@ def perr_dss(N_grid:np.array, beta_grid:np.array, sigma:float, num_samples:int) 
                 prog = sf.Program(1)
 
                 with prog.context as q:
-                    Sgate(r_s, 0) | q[0] 
-                    Dgate(coherent_sign*alphas[k]) | q
+                    Dgate(coherent_sign*alpha_grid[i]) | q
                     Rgate(phi) | q
                     MeasureHomodyne(0) | q
 
-                eng = sf.Engine("gaussian")
                 result = eng.run(prog)
+                eng.reset()
                 result_sign = np.sign(result.samples[0][0])
 
                 if (result_sign>=0 and coherent_sign<0) or (result_sign<0 and coherent_sign>0):
+                    wrong_sign_counter+= 1
+
+            p_err[i] = wrong_sign_counter/num_samples
+        
+    return p_err
+
+
+def perr_dss(N_grid:np.array, beta_grid:np.array, sigma:float, num_samples:int, strawberry:bool=False) -> np.array:
+    '''
+    Experimental calculation of the homodyne error probability for displaced squeezed states
+    '''
+    #Calculation of error probability
+    #============================================
+    p_err = np.zeros((len(N_grid), len(beta_grid)))
+
+    if not strawberry:
+
+        gauss = hermgauss(100)
+
+        for i, N in enumerate(N_grid):
+
+            print(f"\rProgress: {i+1}/{len(N_grid)}", end="", flush=True)
+
+            for k, beta in enumerate(beta_grid):
+                p = theory_point_dss(N, beta, sigma, gauss)
+                p_err[i, k] = np.random.binomial(num_samples, p) / num_samples
+    #============================================
+    else:
+
+        eng = sf.Engine("gaussian")
+
+        for i, N in enumerate(N_grid):
+
+            alphas = np.sqrt(N*(1-beta_grid)) 
+
+            print(f"\rProgress: {i+1}/{len(N_grid)}", end="", flush=True)
+
+            for k, beta in enumerate(beta_grid):
+
+                wrong_sign_counter = 0
+                r_s = math.asinh(np.sqrt(N*beta))
+
+                # Choose phase from Gaussian distribution
+                #============================================
+                phis = np.random.normal(0, sigma, size = num_samples)
+
+                for phi in phis:
+
+                    coherent_sign = np.random.choice([1, -1])
+                    prog = sf.Program(1)
+
+                    with prog.context as q:
+                        Sgate(r_s, 0) | q[0] 
+                        Dgate(coherent_sign*alphas[k]) | q
+                        Rgate(phi) | q
+                        MeasureHomodyne(0) | q
+
+                    result = eng.run(prog)
+                    eng.reset()
+                    result_sign = np.sign(result.samples[0][0])
+
+                    if (result_sign>=0 and coherent_sign<0) or (result_sign<0 and coherent_sign>0):
                         wrong_sign_counter+= 1
 
-            p_err[i][k] = wrong_sign_counter/num_samples
+                p_err[i][k] = wrong_sign_counter/num_samples
 
     return p_err
+
 
 
 def theory_point_cs(N:float, sigma:float, gauss:tuple) -> float:
@@ -148,7 +182,7 @@ def plot_homodyne_perr(sigmas:list, colors_light:list, colors_dark:list, cs:str|
     for i, sigma in enumerate(sigmas):
 
         #-------------------------  Load data  -------------------------
-        data_cs = np.load(f"data/phase_diff/perr_data_phase_diff_cs_a40_S10000_sigma{sigma}.npz")
+        data_cs = np.load(f"data/phase_diff/perr_data_phase_diff_cs_a101_S1000000000_sigma{sigma}.npz")
 
         alpha_cs = data_cs["alpha_grid"]
         perr_cs =  data_cs["p_err_cs"]
@@ -190,7 +224,7 @@ def plot_homodyne_perr(sigmas:list, colors_light:list, colors_dark:list, cs:str|
     for i, sigma in enumerate(sigmas):
 
         #-------------------------  Load data  -------------------------
-        data_dss = np.load(f"data/phase_diff/perr_data_phase_diff_dss_N40_b40_S10000_sigma{sigma}.npz")
+        data_dss = np.load(f"data/phase_diff/perr_data_phase_diff_dss_N101_b101_S1000000000_sigma{sigma}.npz")
         N_dss =  data_dss["N"]
         beta_dss =  data_dss["beta"]
         perr_dss = data_dss["p_err_dss"]
@@ -289,22 +323,19 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
     for i,sigma in enumerate(sigmas):
 
         # ------------- LOAD DATA ----------------------
-        data_cs = np.load(f"data/phase_diff/perr_data_phase_diff_cs_a40_S10000_sigma{sigma}.npz")
+        data_cs = np.load(f"data/phase_diff/perr_data_phase_diff_cs_a101_S1000000000_sigma{sigma}.npz")
         perr_cs =  data_cs["p_err_cs"]
 
-        data_dss = np.load(f"data/phase_diff/perr_data_phase_diff_dss_N40_b40_S10000_sigma{sigma}.npz")
+        data_dss = np.load(f"data/phase_diff/perr_data_phase_diff_dss_N101_b101_S1000000000_sigma{sigma}.npz")
         N =  data_dss["N"]
         beta =  data_dss["beta"]
         perr_dss = data_dss["p_err_dss"]
 
         N_surface, beta_surface = np.meshgrid(N, beta, indexing="ij")
-
-        beta_cs = np.linspace(0, 1, len(N))
-        N_surface_cs, beta_surface_cs = np.meshgrid(N, beta_cs, indexing="ij")
-        perr_surface_cs = np.zeros_like(N_surface_cs)
+        perr_surface_cs = np.zeros_like(N_surface)
 
         for k in range(len(N)):
-            for l in range(len(beta_cs)):
+            for l in range(len(beta)):
 
                 perr_surface_cs [k, l] = perr_cs[k]
 
@@ -332,8 +363,7 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
             beta_th.append(beta_threshold_theory(n, sigma, gauss))
         beta_th= np.array(beta_th)
 
-
-        #-------------------------  R^2  -------------------------
+        #-------------------------  R^2  THRESHOLD -------------------------
         ss_res_th = np.sum((beta_intersection[mask] - beta_th[mask])**2)
         ss_tot_th = np.sum((beta_intersection[mask] - np.mean(beta_intersection[mask]))**2)
         R2_th = 1 - ss_res_th/ss_tot_th
@@ -345,14 +375,15 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
         beta_opt = beta[idx]
         beta_opt_theoretical = np.zeros_like(N)
 
-        #-------------------------  R^2 THRESHOLD  -------------------------
-        ss_res_opt = np.sum((beta_opt - beta_opt_theoretical)**2)
-        ss_tot_opt = np.sum((beta_opt - np.mean(beta_opt))**2)
-        R2_opt = 1 - ss_res_opt/ss_tot_opt
-
         for idx, n in enumerate(N):
             beta_opt_theoretical[idx] = beta_opt_theory(n, sigma, gauss)
         beta_opt_dict[f'sigma_{sigma}'] = beta_opt
+
+        #-------------------------  R^2 OPTIMAL  -------------------------
+        ss_res_opt = np.sum((beta_opt[1:] - beta_opt_theoretical[1:])**2)
+        ss_tot_opt = np.sum((beta_opt[1:] - np.mean(beta_opt[1:]))**2)
+        R2_opt = 1 - ss_res_opt/ss_tot_opt
+
 
         if th:
             
@@ -362,7 +393,7 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
             plt.plot(N_intersection, beta_th, color='k', linewidth = 3)
 
         if opt:
-            plt.scatter(N, beta_opt, color=colors_opt[i], edgecolors='k', s=50, marker='H', zorder=10, 
+            plt.scatter(N[1:], beta_opt[1:], color=colors_opt[i], edgecolors='k', s=50, marker='H', zorder=10, 
                         label = fr'$\beta_{{\rm opt}}$: σ = {sigma}, $R^2$ = {R2_opt:0.3f}')
             plt.plot(N[1:], beta_opt_theoretical[1:], color='k', linewidth = 3)
         
@@ -390,10 +421,10 @@ def optimal_squeezing_noisefree(opt:bool = True, th:bool = True) -> None:
 
     #---------- FIND THRESHOLD ----------
 
-    data_cs = np.load(f"data/phase_diff/perr_data_phase_diff_cs_a40_S10000_sigma0.0.npz")
+    data_cs = np.load(f"data/phase_diff/perr_data_phase_diff_cs_a101_S1000000000_sigma0.0.npz")
     perr_cs =  data_cs["p_err_cs"]
 
-    data_dss = np.load(f"data/phase_diff/perr_data_phase_diff_dss_N40_b40_S10000_sigma0.0.npz")
+    data_dss = np.load(f"data/phase_diff/perr_data_phase_diff_dss_N101_b101_S1000000000_sigma0.0.npz")
     N =  data_dss["N"]
     beta =  data_dss["beta"]
     perr_dss = data_dss["p_err_dss"]
@@ -452,7 +483,7 @@ def optimal_squeezing_noisefree(opt:bool = True, th:bool = True) -> None:
         plt.plot(N_intersection, beta_th, color='k', linewidth = 3)
 
     if opt:
-        plt.scatter(N, beta_opt, color='red', edgecolors='k', s=50, marker='o', zorder=10, 
+        plt.scatter(N[1:], beta_opt[1:], color='red', edgecolors='k', s=50, marker='o', zorder=10, 
                     label = fr'$\beta_{{\rm opt}}$: $R^2$ = {R2_opt:0.3f}')
         plt.plot(N[1:], beta_opt_line[1:], color='k', linewidth = 3)
 
