@@ -8,7 +8,7 @@ from scipy.special import erfc
 import plotly.graph_objects as go
 from numpy.polynomial.hermite import hermgauss
 import matplotlib.pyplot as plt
-from scipy.optimize import brentq
+from scipy.optimize import brentq, minimize_scalar
 
 def perr_cs(alpha_grid:np.array, sigma:float, num_samples:int):
     
@@ -336,7 +336,7 @@ def check_beta_th(N:float, sigma:float, params_cs:tuple, params_dss:tuple):
     plt.show()
 
 
-from scipy.optimize import minimize_scalar
+
 
 def beta_opt_theory(N, sigma, params_dss, gauss):
 
