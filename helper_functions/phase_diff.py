@@ -191,9 +191,6 @@ def plot_homodyne_perr(sigmas, cs=False, dss=False):
         fig.update_layout(scene=dict(xaxis_title="N", yaxis_title=r"β", zaxis = dict(title="P_err", type="log"), 
                             aspectmode ="cube"), width=900, height=750)
         
-        if (cs and dss) in [False]:
-             continue
-        else:
-            fig.show()
-    return 
+    if cs or dss:
+        fig.show()
 
