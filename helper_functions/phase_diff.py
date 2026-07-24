@@ -8,7 +8,7 @@ from scipy.special import erfc
 import plotly.graph_objects as go
 from numpy.polynomial.hermite import hermgauss
 import matplotlib.pyplot as plt
-from scipy.optimize import brentq
+from scipy.optimize import brentq, minimize_scalar
 
 def perr_cs(alpha_grid:np.array, sigma:float, num_samples:int):
     
@@ -162,7 +162,7 @@ def plot_homodyne_perr(sigmas, colors_light, colors_dark, cs=False, dss=False, )
         if cs in ['data', 'all']:
             
             fig.add_trace(go.Scatter3d(x=N_surface_cs.ravel(), y=beta_surface_cs.ravel(), z=perr_surface_cs.ravel(), mode="markers", 
-                                marker=dict(size=3, color=colors_dark[i]), name=f"CS| σ={sigma}: R2 = {R2_cs:0.3f}"))
+                                marker=dict(size=3, color=colors_dark[i]), name=f"CS| σ={sigma_cs}: R2 = {R2_cs:0.3f}"))
 
 
     #============================  DSS  ============================
@@ -202,7 +202,7 @@ def plot_homodyne_perr(sigmas, colors_light, colors_dark, cs=False, dss=False, )
         
         if dss in ['data', 'all']:
                 fig.add_trace(go.Scatter3d(x=N_surface_dss.ravel(), y=beta_surface_dss.ravel(), z=perr_dss.ravel(),
-                mode="markers", marker=dict(size=3, color=colors_light[i]), name=f"DSS| σ={sigma}: R2 = {R2_dss:0.3f}"))
+                mode="markers", marker=dict(size=3, color=colors_light[i]), name=f"DSS| σ={sigma_dss}: R2 = {R2_dss:0.3f}"))
 
         fig.update_layout(scene=dict(xaxis_title="N", yaxis_title=r"β", zaxis = dict(title="P_err", type="log"), 
                             aspectmode ="cube"), width=900, height=750)
@@ -210,3 +210,128 @@ def plot_homodyne_perr(sigmas, colors_light, colors_dark, cs=False, dss=False, )
     if cs or dss:
         fig.show()
 
+
+def beta_threshold_theory(N:float, sigma:float, gauss:tuple):
+    '''
+    Solves the equation F(β_th) = theory_point_dss - theory_point_cs = 0 for a fixed value of N and σ,
+    given the fitted parameters of the models. 
+    The search for the root is conducted in the interval (β_min, 1) to ensure that the first root for β=0 is not considered,
+    where dF(β_min)/dβ = 0.
+    '''
+    point_cs = theory_point_cs(N, sigma, gauss)
+    
+    def F(beta):
+        
+        point_dss = theory_point_dss(N, beta, sigma, gauss) 
+        return point_dss - point_cs
+    
+    # sample to locate minimum
+    beta_grid = np.linspace(0, 1, 500)
+    F_b = np.array([F(b) for b in beta_grid])
+
+    beta_min = beta_grid[np.argmin(F_b)]
+    beta_max = 1
+
+    try:
+        beta_upper = brentq(F, beta_min, beta_max)
+        return beta_upper
+    
+    except:
+        return np.nan
+
+
+def beta_opt_theory(N, sigma, gauss):
+
+    def objective(beta):
+        return theory_point_dss( N, beta, sigma, gauss)
+
+    res = minimize_scalar( objective, bounds=(0,1), method="bounded")
+    return res.x
+
+
+def optimal_squeezing(sigmas, colors_opt, colors_th, opt = False, th = False) -> dict:
+
+    n_gh = 100
+    gauss = hermgauss(n_gh)
+
+    plt.figure(figsize=(15,6), dpi=300)
+
+    #---------- FIND THRESHOLD ----------
+
+
+    beta_opt_dict = {}
+
+    for i,sigma in enumerate(sigmas):
+
+        data_cs = np.load(f"data/phase_diff/perr_data_phase_diff_cs_a40_S10000_sigma{sigma}.npz")
+        alpha_cs = data_cs["alpha_grid"]
+        perr_cs =  data_cs["p_err_cs"]
+        sigma_cs = data_cs["sigma"]
+        N_cs = alpha_cs**2
+        beta_cs = np.linspace(0, 1, len(N_cs))
+
+        N_surface_cs, beta_surface_cs = np.meshgrid(N_cs, beta_cs, indexing="ij")
+        perr_surface_cs = np.zeros_like(N_surface_cs)
+
+
+        data_dss = np.load(f"data/phase_diff/perr_data_phase_diff_dss_N40_b40_S10000_sigma{sigma}.npz")
+        N_dss =  data_dss["N"]
+        beta_dss =  data_dss["beta"]
+        perr_dss = data_dss["p_err_dss"]
+        sigma_dss = data_dss["sigma"]
+        N_surface_dss, beta_surface_dss = np.meshgrid(N_dss, beta_dss, indexing="ij")
+
+
+        for k in range(len(N_cs)):
+            for l in range(len(beta_cs)):
+                perr_surface_cs [k, l] = perr_cs[k]
+
+        # Find intersection points
+        difference = perr_surface_cs - perr_dss
+        
+        cs = plt.contour(N_surface_cs, beta_surface_cs, difference, levels=[0], alpha=0)
+        path = cs.get_paths()[0]
+        verts = path.vertices
+
+        N_intersection = verts[:,0]
+        beta_intersection = verts[:,1]
+        mask = (N_intersection > 0.02) & (beta_intersection > 0.005)
+
+        # Minima along beta for each N
+        idx = np.argmin(perr_dss, axis=1)   
+        beta_opt = beta_dss[idx]
+        beta_opt_line = np.zeros_like(N_dss)
+
+        for idx, N in enumerate(N_dss):
+            beta_opt_line[idx] = beta_opt_theory(N, sigma, gauss)
+        beta_opt_dict[f'sigma_{sigma}'] = beta_opt
+        
+        # Find theoretical values for β_th
+        beta_th = []
+        N_th = np.linspace(0, 2, 101)
+        for N in N_th:
+            beta_th.append(beta_threshold_theory(N, sigma, gauss))
+        beta_th = np.array(beta_th)
+
+        if th:
+            plt.scatter(N_intersection[mask], beta_intersection[mask], s=30, edgecolors='k', color=colors_th[i], marker='D', zorder=10, label = f'σ={sigma:0.1f}')
+            plt.fill_between(N_intersection[mask], beta_intersection[mask], 0, alpha=0.8, zorder=0, color=colors_th[i])
+            plt.plot(N_th, beta_th, color='k', linewidth = 3)
+
+        if opt:
+            plt.scatter(N_dss, beta_opt, color=colors_opt[i], edgecolors='k', s=50, marker='H', zorder=10, label = f'σ={sigma}')
+            plt.plot(N_dss[1:], beta_opt_line[1:], color='k', linewidth = 3)
+            if not th:
+                 #plt.ylim(0, 0.5)
+                 plt.legend()
+        
+        plt.xlabel(r'$N$ (Average number of photons)')
+        plt.ylabel(r'$\beta$ (Squeezing Fraction)')
+        if th:
+            plt.legend()
+
+        plt.tight_layout()
+    plt.show()
+        
+
+    return beta_opt_dict
