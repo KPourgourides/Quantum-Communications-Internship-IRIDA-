@@ -345,6 +345,11 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
         beta_opt = beta[idx]
         beta_opt_theoretical = np.zeros_like(N)
 
+        #-------------------------  R^2 THRESHOLD  -------------------------
+        ss_res_opt = np.sum((beta_opt - beta_opt_theoretical)**2)
+        ss_tot_opt = np.sum((beta_opt - np.mean(beta_opt))**2)
+        R2_opt = 1 - ss_res_opt/ss_tot_opt
+
         for idx, n in enumerate(N):
             beta_opt_theoretical[idx] = beta_opt_theory(n, sigma, gauss)
         beta_opt_dict[f'sigma_{sigma}'] = beta_opt
@@ -352,12 +357,13 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
         if th:
             
             plt.scatter(N_intersection[mask], beta_intersection[mask], s=30, edgecolors='k', color=colors_th[i], marker='D', zorder=10, 
-                        label = f'σ={sigma:0.1f}: R2 = {R2_th:0.3f}')
+                        label = fr'$\beta_{{\rm th}}$: σ = {sigma}, $R^2$ = {R2_th:0.3f}')
             plt.fill_between(N_intersection[mask], beta_th[mask], 0, alpha=0.8, zorder=0, color=colors_th[i])
             plt.plot(N_intersection, beta_th, color='k', linewidth = 3)
 
         if opt:
-            plt.scatter(N, beta_opt, color=colors_opt[i], edgecolors='k', s=50, marker='H', zorder=10, label = f'σ={sigma}: R2 = {R2_opt:.3f}')
+            plt.scatter(N, beta_opt, color=colors_opt[i], edgecolors='k', s=50, marker='H', zorder=10, 
+                        label = fr'$\beta_{{\rm opt}}$: σ = {sigma}, $R^2$ = {R2_opt:0.3f}')
             plt.plot(N[1:], beta_opt_theoretical[1:], color='k', linewidth = 3)
         
         plt.xlabel(r'$N$ (Average number of photons)')
