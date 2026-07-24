@@ -119,9 +119,11 @@ def plot_homodyne_perr(sigmas, colors_light, colors_dark, cs=False, dss=False, )
 
     fig = go.Figure()
     
-    #-------------------------  CS  -------------------------
-
+    #============================  CS  ============================
+    
     for i, sigma in enumerate(sigmas):
+
+        #-------------------------  Load data  -------------------------
 
         data_cs = np.load(f"data/phase_diff/perr_data_phase_diff_cs_a40_S10000_sigma{sigma}.npz")
 
@@ -134,29 +136,40 @@ def plot_homodyne_perr(sigmas, colors_light, colors_dark, cs=False, dss=False, )
         
         N_surface_cs, beta_surface_cs = np.meshgrid(N_cs, beta_cs, indexing="ij")
         z_surface_cs = np.zeros_like(N_surface_cs)
+        perr_surface_cs = np.zeros_like(N_surface_cs)
+
+        #-------------------------  Theoretical curve  -------------------------
 
         for k in range(len(N_cs)):
             for l in range(len(beta_cs)):
-
+                perr_surface_cs [k, l] = perr_cs[k]
                 z_surface_cs[k, l] = theory_point_cs(N_cs[k],  sigma_cs, gauss)
+                
+        #-------------------------  R^2  -------------------------
+
+        ss_res_cs = np.sum((perr_cs - z_surface_cs[:,0])**2)
+        ss_tot_cs = np.sum((perr_cs - np.mean(perr_cs))**2)
+
+        R2_cs = 1 - ss_res_cs/ss_tot_cs
+
+        #-------------------------  Plot  -------------------------
 
         if cs in ['theory', 'all']:
-            # fitted surface
+        
             fig.add_trace(go.Surface(x=N_surface_cs, y=beta_surface_cs, z=z_surface_cs, surfacecolor=np.zeros_like(z_surface_cs), 
-                                colorscale=[[0.0, colors_light[i]], [1.0, colors_light[i]]], name="Fit", showscale=False))
+                                colorscale=[[0.0, colors_light[i]], [1.0, colors_light[i]]], showscale=False))
             
         if cs in ['data', 'all']:
-                # Simulation scatter extended in beta
-                beta_values_cs = np.linspace(0, 1, 20)
+            
+            fig.add_trace(go.Scatter3d(x=N_surface_cs.ravel(), y=beta_surface_cs.ravel(), z=perr_surface_cs.ravel(), mode="markers", 
+                                marker=dict(size=3, color=colors_dark[i]), name=f"CS| σ={sigma}: R2 = {R2_cs:0.3f}"))
 
-                # No beta dependence
-                for beta in beta_values_cs:
-                    fig.add_trace(go.Scatter3d(x=N_cs, y=np.full_like(N_cs, beta), z=perr_cs, mode="markers", 
-                                marker=dict(size=3, color=colors_dark[i]), name=f"Simulation β={beta:.2f}", showlegend=False))
 
-    #-------------------------  DSS  -------------------------
+    #============================  DSS  ============================
 
     for i, sigma in enumerate(sigmas):
+
+        #-------------------------  Load data  -------------------------
 
         data_dss = np.load(f"data/phase_diff/perr_data_phase_diff_dss_N40_b40_S10000_sigma{sigma}.npz")
         N_dss =  data_dss["N"]
@@ -167,18 +180,29 @@ def plot_homodyne_perr(sigmas, colors_light, colors_dark, cs=False, dss=False, )
         N_surface_dss, beta_surface_dss = np.meshgrid(N_dss, beta_dss, indexing="ij")
         z_surface_dss = np.zeros_like(N_surface_dss)
 
+        #-------------------------  Theoretical curve  -------------------------
+
         for k in range(len(N_dss)):
             for l in range(len(beta_dss)):
 
                 z_surface_dss[k, l] = theory_point_dss(N_dss[k], beta_dss[l], sigma_dss, gauss)
 
+        #-------------------------  R^2  -------------------------
+
+        ss_res_dss = np.sum((perr_dss - z_surface_dss)**2)
+        ss_tot_dss = np.sum((perr_dss - np.mean(perr_dss))**2)
+
+        R2_dss = 1 - ss_res_dss/ss_tot_dss
+
+        #-------------------------  Plot  -------------------------
+
         if dss in ['theory', 'all']:
                 fig.add_trace(go.Surface( x=N_surface_dss, y=beta_surface_dss, z=z_surface_dss, surfacecolor=np.zeros_like(z_surface_dss), 
-                                colorscale=[[0.0, colors_dark[i]], [1.0, colors_dark[i]]], name="Fit", showscale=False))
+                                colorscale=[[0.0, colors_dark[i]], [1.0, colors_dark[i]]], showscale=False))
         
         if dss in ['data', 'all']:
                 fig.add_trace(go.Scatter3d(x=N_surface_dss.ravel(), y=beta_surface_dss.ravel(), z=perr_dss.ravel(),
-                mode="markers", marker=dict(size=3, color=colors_light[i]), name=f"σ={sigma}"))
+                mode="markers", marker=dict(size=3, color=colors_light[i]), name=f"DSS| σ={sigma}: R2 = {R2_dss:0.3f}"))
 
         fig.update_layout(scene=dict(xaxis_title="N", yaxis_title=r"β", zaxis = dict(title="P_err", type="log"), 
                             aspectmode ="cube"), width=900, height=750)
