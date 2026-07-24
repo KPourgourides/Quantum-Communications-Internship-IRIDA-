@@ -237,7 +237,7 @@ def beta_threshold_theory(N:float, sigma:float, gauss:tuple):
         return beta_upper
     
     except:
-        return np.nan
+        return 0
 
 
 def beta_opt_theory(N, sigma, gauss):
@@ -264,25 +264,20 @@ def optimal_squeezing(sigmas, colors_opt, colors_th, opt = False, th = False) ->
     for i,sigma in enumerate(sigmas):
 
         data_cs = np.load(f"data/phase_diff/perr_data_phase_diff_cs_a40_S10000_sigma{sigma}.npz")
-        alpha_cs = data_cs["alpha_grid"]
         perr_cs =  data_cs["p_err_cs"]
-        sigma_cs = data_cs["sigma"]
-        N_cs = alpha_cs**2
-        beta_cs = np.linspace(0, 1, len(N_cs))
-
-        N_surface_cs, beta_surface_cs = np.meshgrid(N_cs, beta_cs, indexing="ij")
-        perr_surface_cs = np.zeros_like(N_surface_cs)
-
 
         data_dss = np.load(f"data/phase_diff/perr_data_phase_diff_dss_N40_b40_S10000_sigma{sigma}.npz")
-        N_dss =  data_dss["N"]
-        beta_dss =  data_dss["beta"]
+        N =  data_dss["N"]
+        beta =  data_dss["beta"]
         perr_dss = data_dss["p_err_dss"]
-        sigma_dss = data_dss["sigma"]
-        N_surface_dss, beta_surface_dss = np.meshgrid(N_dss, beta_dss, indexing="ij")
+        N_surface, beta_surface = np.meshgrid(N, beta, indexing="ij")
 
 
-        for k in range(len(N_cs)):
+        beta_cs = np.linspace(0, 1, len(N))
+        N_surface_cs, beta_surface_cs = np.meshgrid(N, beta_cs, indexing="ij")
+        perr_surface_cs = np.zeros_like(N_surface_cs)
+
+        for k in range(len(N)):
             for l in range(len(beta_cs)):
                 perr_surface_cs [k, l] = perr_cs[k]
 
@@ -295,32 +290,49 @@ def optimal_squeezing(sigmas, colors_opt, colors_th, opt = False, th = False) ->
 
         N_intersection = verts[:,0]
         beta_intersection = verts[:,1]
-        mask = (N_intersection > 0.02) & (beta_intersection > 0.005)
+        N_intersection, beta_intersection = zip(*sorted(zip(N_intersection, beta_intersection)))
+        N_intersection = np.array(N_intersection)
+        beta_intersection = np.array(beta_intersection)
+        mask = (N_intersection > 0.01) & (beta_intersection > 0.01)
 
-        # Minima along beta for each N
-        idx = np.argmin(perr_dss, axis=1)   
-        beta_opt = beta_dss[idx]
-        beta_opt_line = np.zeros_like(N_dss)
-
-        for idx, N in enumerate(N_dss):
-            beta_opt_line[idx] = beta_opt_theory(N, sigma, gauss)
-        beta_opt_dict[f'sigma_{sigma}'] = beta_opt
         
         # Find theoretical values for β_th
         beta_th = []
-        N_th = np.linspace(0, 2, 101)
-        for N in N_th:
-            beta_th.append(beta_threshold_theory(N, sigma, gauss))
-        beta_th = np.array(beta_th)
+        for n in N_intersection:
+            beta_th.append(beta_threshold_theory(n, sigma, gauss))
+        beta_th= np.array(beta_th)
+
+
+        #-------------------------  R^2  -------------------------
+        
+        ss_res_th = np.sum((beta_intersection[mask] - beta_th[mask])**2)
+        ss_tot_th = np.sum((beta_intersection[mask] - np.mean(beta_intersection[mask]))**2)
+        
+        R2_th = 1 - ss_res_th/ss_tot_th
+
+        print(R2_th)
+
+
+        # ------------- OPTIMAL ----------------------
+        # Minima along beta for each N
+        idx = np.argmin(perr_dss, axis=1)   
+        beta_opt = beta[idx]
+        beta_opt_line = np.zeros_like(N)
+
+        for idx, n in enumerate(N):
+            beta_opt_line[idx] = beta_opt_theory(n, sigma, gauss)
+        beta_opt_dict[f'sigma_{sigma}'] = beta_opt
+
 
         if th:
-            plt.scatter(N_intersection[mask], beta_intersection[mask], s=30, edgecolors='k', color=colors_th[i], marker='D', zorder=10, label = f'σ={sigma:0.1f}')
-            plt.fill_between(N_intersection[mask], beta_intersection[mask], 0, alpha=0.8, zorder=0, color=colors_th[i])
-            plt.plot(N_th, beta_th, color='k', linewidth = 3)
+            
+            plt.scatter(N_intersection[mask], beta_intersection[mask], s=30, edgecolors='k', color=colors_th[i], marker='D', zorder=10, label = f'σ={sigma:0.1f}: R2 = {R2_th:0.3f}')
+            plt.fill_between(N_intersection[mask], beta_th[mask], 0, alpha=0.8, zorder=0, color=colors_th[i])
+            plt.plot(N_intersection, beta_th, color='k', linewidth = 3)
 
         if opt:
-            plt.scatter(N_dss, beta_opt, color=colors_opt[i], edgecolors='k', s=50, marker='H', zorder=10, label = f'σ={sigma}')
-            plt.plot(N_dss[1:], beta_opt_line[1:], color='k', linewidth = 3)
+            plt.scatter(N, beta_opt, color=colors_opt[i], edgecolors='k', s=50, marker='H', zorder=10, label = f'σ={sigma}')
+            plt.plot(N[1:], beta_opt_line[1:], color='k', linewidth = 3)
             if not th:
                  #plt.ylim(0, 0.5)
                  plt.legend()
