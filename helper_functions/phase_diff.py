@@ -288,6 +288,7 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
 
     for i,sigma in enumerate(sigmas):
 
+        # ------------- LOAD DATA ----------------------
         data_cs = np.load(f"data/phase_diff/perr_data_phase_diff_cs_a40_S10000_sigma{sigma}.npz")
         perr_cs =  data_cs["p_err_cs"]
 
@@ -295,6 +296,7 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
         N =  data_dss["N"]
         beta =  data_dss["beta"]
         perr_dss = data_dss["p_err_dss"]
+
         N_surface, beta_surface = np.meshgrid(N, beta, indexing="ij")
 
         beta_cs = np.linspace(0, 1, len(N))
@@ -306,20 +308,23 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
 
                 perr_surface_cs [k, l] = perr_cs[k]
 
-        # Find intersection points
+
+        #-------------------------  THRESHOLD  -------------------------
+        
+        # Find intersection points from two surfaces
         difference = perr_surface_cs - perr_dss
         
-        cs = plt.contour(N_surface_cs, beta_surface_cs, difference, levels=[0], alpha=0)
+        cs = plt.contour(N_surface, beta_surface, difference, levels=[0], alpha=0)
         path = cs.get_paths()[0]
         verts = path.vertices
 
+        # sort intersection points and filter out the initial noisy points
         N_intersection = verts[:,0]
         beta_intersection = verts[:,1]
         N_intersection, beta_intersection = zip(*sorted(zip(N_intersection, beta_intersection)))
         N_intersection = np.array(N_intersection)
         beta_intersection = np.array(beta_intersection)
-        mask = (N_intersection > 0.01) & (beta_intersection > 0.01)
-
+        mask = (N_intersection > 0.06) & (beta_intersection > 0.01)
         
         # Find theoretical values for β_th
         beta_th = []
@@ -334,13 +339,14 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
         R2_th = 1 - ss_res_th/ss_tot_th
 
         # ------------- OPTIMAL ----------------------
+
         # Minima along beta for each N
         idx = np.argmin(perr_dss, axis=1)   
         beta_opt = beta[idx]
-        beta_opt_line = np.zeros_like(N)
+        beta_opt_theoretical = np.zeros_like(N)
 
         for idx, n in enumerate(N):
-            beta_opt_line[idx] = beta_opt_theory(n, sigma, gauss)
+            beta_opt_theoretical[idx] = beta_opt_theory(n, sigma, gauss)
         beta_opt_dict[f'sigma_{sigma}'] = beta_opt
 
         if th:
@@ -351,16 +357,12 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
             plt.plot(N_intersection, beta_th, color='k', linewidth = 3)
 
         if opt:
-            plt.scatter(N, beta_opt, color=colors_opt[i], edgecolors='k', s=50, marker='H', zorder=10, label = f'σ={sigma}')
-            plt.plot(N[1:], beta_opt_line[1:], color='k', linewidth = 3)
-            if not th:
-                 #plt.ylim(0, 0.5)
-                 plt.legend()
+            plt.scatter(N, beta_opt, color=colors_opt[i], edgecolors='k', s=50, marker='H', zorder=10, label = f'σ={sigma}: R2 = {R2_opt:.3f}')
+            plt.plot(N[1:], beta_opt_theoretical[1:], color='k', linewidth = 3)
         
         plt.xlabel(r'$N$ (Average number of photons)')
         plt.ylabel(r'$\beta$ (Squeezing Fraction)')
-        if th:
-            plt.legend()
+        plt.legend()
 
         plt.tight_layout()
     plt.show()
