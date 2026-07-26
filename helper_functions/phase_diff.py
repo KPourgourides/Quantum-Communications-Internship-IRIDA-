@@ -182,7 +182,7 @@ def plot_homodyne_perr(sigmas:list, colors_light:list, colors_dark:list, cs:str|
     for i, sigma in enumerate(sigmas):
 
         #-------------------------  Load data  -------------------------
-        data_cs = np.load(f"data/phase_diff/perr_data_phase_diff_cs_a101_S1000000000_sigma{sigma}.npz")
+        data_cs = np.load(f"data/CS/perr_cs_a101_S{int(1e9)}_sigma{sigma}.npz")
 
         alpha_cs = data_cs["alpha_grid"]
         perr_cs =  data_cs["p_err_cs"]
@@ -224,7 +224,7 @@ def plot_homodyne_perr(sigmas:list, colors_light:list, colors_dark:list, cs:str|
     for i, sigma in enumerate(sigmas):
 
         #-------------------------  Load data  -------------------------
-        data_dss = np.load(f"data/phase_diff/perr_data_phase_diff_dss_N101_b101_S1000000000_sigma{sigma}.npz")
+        data_dss = np.load(f"data/DSS/perr_dss_N101_b101_S{int(1e9)}_sigma{sigma}.npz")
         N_dss =  data_dss["N"]
         beta_dss =  data_dss["beta"]
         perr_dss = data_dss["p_err_dss"]
@@ -323,10 +323,10 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
     for i,sigma in enumerate(sigmas):
 
         # ------------- LOAD DATA ----------------------
-        data_cs = np.load(f"data/phase_diff/perr_data_phase_diff_cs_a101_S1000000000_sigma{sigma}.npz")
+        data_cs = np.load(f"data/CS/perr_cs_a101_S{int(1e9)}_sigma{sigma}.npz")
         perr_cs =  data_cs["p_err_cs"]
 
-        data_dss = np.load(f"data/phase_diff/perr_data_phase_diff_dss_N101_b101_S1000000000_sigma{sigma}.npz")
+        data_dss = np.load(f"data/DSS/perr_dss_N101_b101_S{int(1e9)}_sigma{sigma}.npz")
         N =  data_dss["N"]
         beta =  data_dss["beta"]
         perr_dss = data_dss["p_err_dss"]
@@ -399,7 +399,9 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
         
         plt.xlabel(r'$N$ (Average number of photons)')
         plt.ylabel(r'$\beta$ (Squeezing Fraction)')
-        plt.legend()
+
+        if th or opt:
+            plt.legend()
 
         plt.tight_layout()
     plt.show()
@@ -421,10 +423,10 @@ def optimal_squeezing_noisefree(opt:bool = True, th:bool = True) -> None:
 
     #---------- FIND THRESHOLD ----------
 
-    data_cs = np.load(f"data/phase_diff/perr_data_phase_diff_cs_a101_S1000000000_sigma0.0.npz")
+    data_cs = np.load(f"data/CS/perr_cs_a101_S{int(1e9)}_sigma0.0.npz")
     perr_cs =  data_cs["p_err_cs"]
 
-    data_dss = np.load(f"data/phase_diff/perr_data_phase_diff_dss_N101_b101_S1000000000_sigma0.0.npz")
+    data_dss = np.load(f"data/DSS/perr_dss_N101_b101_S{int(1e9)}_sigma0.0.npz")
     N =  data_dss["N"]
     beta =  data_dss["beta"]
     perr_dss = data_dss["p_err_dss"]
@@ -497,4 +499,111 @@ def optimal_squeezing_noisefree(opt:bool = True, th:bool = True) -> None:
 
     plt.tight_layout()
     plt.show()
+
+
+def beta_threshold_vs_sigma(N_values:np.array, sigmas:np.array):
+
+    n_gh = 100
+    gauss = hermgauss(n_gh)
+
+    plt.figure(figsize=(5,5))
+
+    for N in N_values:
+
+        beta_th_values = []
+
+        for sigma in sigmas:
+
+            beta_th = beta_threshold_theory(N, sigma, gauss)
+
+            if np.isnan(beta_th):
+                beta_th = 0
+
+            beta_th_values.append(beta_th)
+
+        plt.plot(sigmas, beta_th_values, label=f"N={N}", linewidth=3)
+        plt.fill_between(sigmas, beta_th_values, 0, alpha=0.3)
+
+    plt.ylim(-0.01, 1.01)
+    plt.xlim(-0.01, 1.01)
+    plt.xlabel(r"$\sigma$")
+    plt.ylabel(r"$\beta_{\mathrm{threshold}}$")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+
+def helstrom_bound(N:float, beta_opt_dict:dict, sigmas:np.array, fock_cutoff:int):
+
+    N_grid = np.linspace(0, 2, 81)
+
+    if beta_opt_dict == 0:
+        beta_opt_array = np.zeros((len(sigmas)))
+    else:
+        beta_opt_array = np.zeros((len(sigmas)))
+
+        for i,sigma in enumerate(sigmas):
+
+            beta_opt_array[i] = beta_opt_dict[f"sigma_{sigma}"][np.where(N_grid == N)[0][0]]
+
+
+    alpha = np.sqrt(N*(1-beta_opt_array)) 
+    r_opt = np.arcsinh(np.sqrt(N*beta_opt_array))
+
+    def state(alpha, r, phi):
+
+        prog = sf.Program(1)
+        with prog.context as q:
+            Vac | q[0]
+            Sgate(r) | q[0] 
+            Dgate(alpha) | q[0]
+            Rgate(phi) | q
+        #run the engine and get the state
+        eng = sf.Engine("fock", backend_options={"cutoff_dim": fock_cutoff})
+        result = eng.run(prog)
+        return result.state.dm()
+    
+    n_gh = 100
+    gauss = hermgauss(n_gh)
+    x, w = gauss
+    p_helstrom = np.zeros((len(sigmas)))
+
+    for j,sigma in enumerate(sigmas):
+
+        phis = np.sqrt(2)*sigma*x
+        rho_1 = 0
+        rho_2 = 0
+
+        for i,phi in enumerate(phis):
+            rho_1 +=  w[i]*state(alpha[j], r_opt[j], phis[i])/np.sqrt(np.pi)
+            rho_2 +=  w[i]*state(-1*alpha[j], r_opt[j], phis[i])/np.sqrt(np.pi)
+
+        Delta = rho_1 - rho_2
+        eigenvals = np.linalg.eigvalsh(Delta)
+        trace_norm = np.sum(np.abs(eigenvals))
+
+        p_helstrom[j] = 0.5*(1 - 0.5*trace_norm)
+    
+    return p_helstrom
+
+def perr_vs_sigma(N:float, beta_opt_dict, sigmas:np.array, cs:bool):
+
+    N_grid = np.linspace(0, 2, 101)
+    p = np.zeros((len(sigmas)))
+    beta_opt_array = np.zeros((len(sigmas)))
+
+    n_gh = 100
+    x, w = hermgauss(n_gh)
+
+    if cs:
+        for i, sigma in enumerate(sigmas):
         
+            p[i] = theory_point_cs(N=N, sigma = sigma, gauss = (x, w))
+    else:
+
+        for i, sigma in enumerate(sigmas):
+        
+            beta_opt_array[i] = beta_opt_dict[f"sigma_{sigma}"][np.where(N_grid == N)[0][0]]
+            p[i] = theory_point_dss(N=N, beta = beta_opt_array[i], sigma = sigma, gauss = (x, w))
+
+    return p
