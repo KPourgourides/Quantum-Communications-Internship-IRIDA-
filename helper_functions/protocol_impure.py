@@ -130,7 +130,7 @@ def plot_homodyne_perr(sigmas:list, colors_light:list, colors_dark:list, cs:str|
     for i, sigma in enumerate(sigmas):
 
         #-------------------------  Load data  -------------------------
-        data_cs = np.load(f"data/CS/perr_cs_N2_mu21_S5000_sigma{sigma}.npz")
+        data_cs = np.load(f"data/CS/perr_cs_N2_mu21_S10000_sigma{sigma}.npz")
 
         N_cs = data_cs["N"]
         perr_cs =  data_cs["perr"]
@@ -174,7 +174,7 @@ def plot_homodyne_perr(sigmas:list, colors_light:list, colors_dark:list, cs:str|
     for i, sigma in enumerate(sigmas):
 
         #-------------------------  Load data  -------------------------
-        data_dss = np.load(f"data/DSS/perr_dss_N2_b21_mu21_S5000_sigma{sigma}.npz")
+        data_dss = np.load(f"data/DSS/perr_dss_N2_b21_mu21_S10000_sigma{sigma}.npz")
         N_dss =  data_dss["N"]
         beta_dss =  data_dss["beta_grid"]
         perr_dss = data_dss["perr"]
@@ -236,10 +236,10 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
 
         # ------------- LOAD DATA ----------------------
                
-        data_cs = np.load(f"data/CS/perr_cs_N2_mu21_S5000_sigma{sigma}.npz")
+        data_cs = np.load(f"data/CS/perr_cs_N2_mu21_S10000_sigma{sigma}.npz")
         perr_cs =  data_cs["perr"]
 
-        data_dss = np.load(f"data/DSS/perr_dss_N2_b21_mu21_S5000_sigma{sigma}.npz")
+        data_dss = np.load(f"data/DSS/perr_dss_N2_b21_mu21_S10000_sigma{sigma}.npz")
         perr_dss =  data_dss["perr"]
         beta = data_dss["beta_grid"]
         mus_grid = data_dss["mus_grid"]
