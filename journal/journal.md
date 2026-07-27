@@ -88,6 +88,8 @@ The produced data seem to follow well the derived error probability for both pro
 - Determine the optimal squeezing fraction $(\beta_{opt})$
 - Compare the error probability of both protocols with the corresponding Helstrom bound
 
+***
+
 ## Week 2 Overview (July 8-15) 
 
 ***
@@ -211,3 +213,23 @@ From the DSS fitted error probability surface, the minimum value for each averag
 - Compare CS/DSS Helstrom bound to the corresponding error probability 
 - Investigate $\beta_{th}$ as a function of $\sigma$ for constant values of N 
 - Complete phase diffusion protocol by organizing files and ensuring smooth workflow
+
+## Week 4 Overview (July 22-29) 
+
+***
+- Completed phase diffusion protocol:
+    - Investigated Helstrom bound in CS/DSS phase diffusion protocol
+    - Compared CS/DSS Helstrom bound to the corresponding error probability 
+    - Investigated $\beta_{th}$ as a function of $\sigma$ for constant values of N 
+
+- Changed the workflow after meeting with supervisor:
+    - The second part of the project would focus on implementing these protocols experimentally on quantum photonic hardware, but came to the conclusion that this is not feasible due to limited availability of free-access quantum hardware and restricted gate availability. Thus, the second part of the project will focus on a theoretical extension, e.g. how entanglement or another quantum property can improve discrimination.
+    - Since SF draws measurements out of the underlying probability distributions, it was decided to also develop mathematically the Monte Carlo (MC) data production, without the use of the software. This provides some insight on the mathematical background, and avoids treating the software as a black box. This method is also considerably faster, given that some processes can be parallelized, and MC data can be produced instantly, even for large samplings.
+    - The previous workflow (fitting the MC data to theoretical prediction and using the fitted surface to do find beta_th/beta_opt), would be better if we intended to follow the experimental path. Since this project turned out to be solely a theoretical/computational investigation, it was decided that it is best to calculate statistical metrics to find the deviation of the MC data from the numerical solutions (since there is not always a closed form of the investigated quantity) for each step of the process.  
+    - Organized files according to the new workflow
+
+- Started implementing the most general protocol which assumes a non-pure initial seed state with phase diffusion:
+    - Implemented the protocol in SF
+    - Produced MC data
+    - Found b_th/b_opt from MC data
+
