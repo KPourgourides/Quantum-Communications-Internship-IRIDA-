@@ -110,6 +110,41 @@ def perr_cs(N:float, mus_grid:np.array, sigma:float, num_samples:int) -> np.arra
         return p_err
 
 
+def theory_point_dss(N:float, beta:float, mu:float, sigma:float, gauss:tuple) -> float:
+        '''
+        Numerical calculation of the theoretical homodyne error probability for displaced squeezed states,
+        works for a single (N, β) points.
+        '''
+        x_gh, w_gh = gauss
+
+        a = np.sqrt(N*(1-beta)+(mu-1)*(1+2*N*beta)/(2*mu))
+        r = np.arcsinh(np.sqrt(N * beta))
+        phi = np.sqrt(2) * sigma * x_gh
+        V = (np.exp(-2*r) * np.cos(phi)**2 + np.exp(2*r) * np.sin(phi)**2)/mu
+
+        arg = np.sqrt(2) * a * np.cos(phi)/np.sqrt(V)
+        integral = 0.5*np.sum(w_gh * erfc(arg)) / np.sqrt(np.pi)
+
+        return integral
+
+def theory_point_cs(N:float, mu:float, sigma:float, gauss:tuple) -> float:
+        '''
+        Numerical calculation of the theoretical homodyne error probability for displaced squeezed states,
+        works for a single (N, β) points.
+        '''
+        x_gh, w_gh = gauss
+
+        a = np.sqrt(N+(mu-1)/(2*mu))
+        r = 0
+        phi = np.sqrt(2) * sigma * x_gh
+        V = (np.exp(-2*r) * np.cos(phi)**2 + np.exp(2*r) * np.sin(phi)**2)/mu
+
+        arg = np.sqrt(2) * a * np.cos(phi)/np.sqrt(V)
+        integral = 0.5*np.sum(w_gh * erfc(arg)) / np.sqrt(np.pi)
+
+        return integral
+
+
 def plot_homodyne_perr(sigmas:list, colors_light:list, colors_dark:list, cs:str|bool = False, dss:str|bool = False) -> None:
     '''
     Plots the homodyne error probability for CS and DSS.
@@ -147,26 +182,26 @@ def plot_homodyne_perr(sigmas:list, colors_light:list, colors_dark:list, cs:str|
             for l in range(len(beta_cs)):
 
                 perr_surface_cs [k, l] = perr_cs[k]
-                #z_surface_cs[k, l] = theory_point_cs(N_cs[k],  sigma_cs, gauss)
+                z_surface_cs[k, l] = theory_point_cs(N_cs, mus_cs[k], sigma, gauss)
         
         #-------------------------  R^2  -------------------------
-        '''
+        
         ss_res_cs = np.sum((perr_cs - z_surface_cs[:,0])**2)
         ss_tot_cs = np.sum((perr_cs - np.mean(perr_cs))**2)
         R2_cs = 1 - ss_res_cs/ss_tot_cs
-        '''
+        
         #-------------------------  Plot  -------------------------
-        '''
+        
         if cs in ['theory', 'all']:
         
             fig.add_trace(go.Surface(x=N_surface_cs, y=beta_surface_cs, z=z_surface_cs, surfacecolor=np.zeros_like(z_surface_cs), 
                                 colorscale=[[0.0, colors_light[i]], [1.0, colors_light[i]]], showscale=False))
-        '''
+        
         if cs in ['data', 'all']:
             
             fig.add_trace(go.Scatter3d(x=N_surface_cs.ravel(), y=beta_surface_cs.ravel(), z=perr_surface_cs.ravel(), mode="markers", 
                                 marker=dict(size=3, color=colors_dark[i])))
-            fig.add_trace(go.Surface(x=N_surface_cs, y=beta_surface_cs, z=perr_surface_cs, colorscale=[[0.0, colors_light[i]], [1.0, colors_light[i]]], showscale=False))
+            
 
     
     #============================  DSS  ============================
@@ -184,30 +219,30 @@ def plot_homodyne_perr(sigmas:list, colors_light:list, colors_dark:list, cs:str|
         
 
         #-------------------------  Theoretical curve  -------------------------
-        '''
-        z_surface_dss = np.zeros_like(mus_surface_dss)
+        
+        z_surface_dss = np.zeros_like(mu_surface_dss)
 
-        for k in range(len(N_dss)):
+        for k in range(len(mus_dss)):
             for l in range(len(beta_dss)):
 
-                z_surface_dss[k, l] = theory_point_dss(N_dss[k], beta_dss[l], sigma_dss, gauss)
-        '''
+                z_surface_dss[k, l] = theory_point_dss(N_dss, beta_dss[l], mus_dss[k], sigma, gauss)
+        
         #-------------------------  R^2  -------------------------
-        '''
+        
         ss_res_dss = np.sum((perr_dss - z_surface_dss)**2)
         ss_tot_dss = np.sum((perr_dss - np.mean(perr_dss))**2)
         R2_dss = 1 - ss_res_dss/ss_tot_dss
-        '''
+        
         #-------------------------  Plot  -------------------------
-        '''
+        
         if dss in ['theory', 'all']:
-                fig.add_trace(go.Surface( x=N_surface_dss, y=beta_surface_dss, z=z_surface_dss, surfacecolor=np.zeros_like(z_surface_dss), 
+                fig.add_trace(go.Surface( x=mu_surface_dss, y=beta_surface_dss, z=z_surface_dss, surfacecolor=np.zeros_like(z_surface_dss), 
                                 colorscale=[[0.0, colors_dark[i]], [1.0, colors_dark[i]]], showscale=False))
-        '''
+        
         if dss in ['data', 'all']:
                 fig.add_trace(go.Scatter3d(x=mu_surface_dss.ravel(), y=beta_surface_dss.ravel(), z=perr_dss.ravel(),
                 mode="markers", marker=dict(size=3, color=colors_light[i])))
-                fig.add_trace(go.Surface(x=mu_surface_dss, y=beta_surface_dss, z=perr_dss, colorscale=[[0.0, colors_dark[i]], [1.0, colors_dark[i]]], showscale=False))
+                
 
         fig.update_layout(scene=dict(xaxis_title="μ", yaxis_title=r"β", zaxis = dict(title="P_err", type="log"), 
                             aspectmode ="cube"), width=900, height=750)
