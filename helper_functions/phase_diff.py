@@ -10,6 +10,10 @@ import plotly.graph_objects as go
 from helper_functions.state_measurement import *
 import random
 
+global DATAPATH_CS, DATAPATH_DSS
+DATAPATH_CS = 'data/CS/perr_cs_a101_S1000000000'
+DATAPATH_DSS = 'data/DSS/perr_dss_N101_b101_S1000000000'
+
 def perr_cs(alpha_grid:np.array, sigma:float, num_samples:int, strawberry:bool=False) -> np.array:
     '''
     Experimental calculation of the homodyne error probability for coherent states
@@ -182,7 +186,7 @@ def plot_homodyne_perr(sigmas:list, colors_light:list, colors_dark:list, cs:str|
     for i, sigma in enumerate(sigmas):
 
         #-------------------------  Load data  -------------------------
-        data_cs = np.load(f"data/CS/perr_cs_a101_S{int(1e9)}_sigma{sigma}.npz")
+        data_cs = np.load(f"{DATAPATH_CS}_sigma{sigma}.npz")
 
         alpha_cs = data_cs["alpha_grid"]
         perr_cs =  data_cs["p_err_cs"]
@@ -224,7 +228,7 @@ def plot_homodyne_perr(sigmas:list, colors_light:list, colors_dark:list, cs:str|
     for i, sigma in enumerate(sigmas):
 
         #-------------------------  Load data  -------------------------
-        data_dss = np.load(f"data/DSS/perr_dss_N101_b101_S{int(1e9)}_sigma{sigma}.npz")
+        data_dss = np.load(f"{DATAPATH_DSS}_sigma{sigma}.npz")
         N_dss =  data_dss["N"]
         beta_dss =  data_dss["beta"]
         perr_dss = data_dss["p_err_dss"]
@@ -323,10 +327,10 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
     for i,sigma in enumerate(sigmas):
 
         # ------------- LOAD DATA ----------------------
-        data_cs = np.load(f"data/CS/perr_cs_a101_S{int(1e9)}_sigma{sigma}.npz")
+        data_cs = np.load(f"{DATAPATH_CS}_sigma{sigma}.npz")
         perr_cs =  data_cs["p_err_cs"]
 
-        data_dss = np.load(f"data/DSS/perr_dss_N101_b101_S{int(1e9)}_sigma{sigma}.npz")
+        data_dss = np.load(f"{DATAPATH_DSS}_sigma{sigma}.npz")
         N =  data_dss["N"]
         beta =  data_dss["beta"]
         perr_dss = data_dss["p_err_dss"]
@@ -423,10 +427,10 @@ def optimal_squeezing_noisefree(opt:bool = True, th:bool = True) -> None:
 
     #---------- FIND THRESHOLD ----------
 
-    data_cs = np.load(f"data/CS/perr_cs_a101_S{int(1e9)}_sigma0.0.npz")
+    data_cs = np.load(f"{DATAPATH_CS}_sigma0.0.npz")
     perr_cs =  data_cs["p_err_cs"]
 
-    data_dss = np.load(f"data/DSS/perr_dss_N101_b101_S{int(1e9)}_sigma0.0.npz")
+    data_dss = np.load(f"{DATAPATH_DSS}_sigma0.0.npz")
     N =  data_dss["N"]
     beta =  data_dss["beta"]
     perr_dss = data_dss["p_err_dss"]
@@ -607,3 +611,26 @@ def perr_vs_sigma(N:float, beta_opt_dict, sigmas:np.array, cs:bool):
             p[i] = theory_point_dss(N=N, beta = beta_opt_array[i], sigma = sigma, gauss = (x, w))
 
     return p
+
+def plot_helstrom_vs_homodyne(sigma:list, p_helstrom:tuple, p_homodyne:tuple):
+
+    p_helstrom_cs, p_helstrom_dss = p_helstrom
+    p_cs_hd, p_dss_hd = p_homodyne
+    
+    fig, ax = plt.subplots(1, 2, figsize=(10,5))
+
+    ax[0].set_title('DSS')
+    ax[0].plot(sigma, p_helstrom_dss, linestyle='--', marker='o', markersize=4, color='k', label='Helstrom')
+    ax[0].plot(sigma, p_dss_hd, linestyle='--', marker='o', markersize=4, color='r', label='Homodyne')
+    ax[0].set_yscale('log')
+
+    ax[1].set_title('CS')
+    ax[1].plot(sigma, p_helstrom_cs, linestyle='--', marker='o', markersize=4, color='k', label='Helstrom')
+    ax[1].plot(sigma, p_cs_hd, linestyle='--', marker='o', markersize=4, color='b', label='Homodyne')
+    ax[1].set_yscale('log')
+
+    for axis in ax:
+        axis.set_ylim(min(p_helstrom_dss)/2, 2*max(p_helstrom_dss))
+        axis.legend()
+
+    plt.show()
