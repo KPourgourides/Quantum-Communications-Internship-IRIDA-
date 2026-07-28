@@ -11,8 +11,8 @@ import matplotlib.pyplot as plt
 from scipy.optimize import brentq, minimize_scalar
 
 global DATAPATH_DTS, DATAPATH_DSTS
-DATAPATH_DTS = 'data/DTS/perr_dts_N2_mu101_S1000000000'
-DATAPATH_DSTS = 'data/DSTS/perr_dsts_N2_b101_mu101_S1000000000'
+DATAPATH_DTS = 'data/DTS/perr_dts_N2_mu201_S1000000000'
+DATAPATH_DSTS = 'data/DSTS/perr_dsts_N2_b201_mu201_S1000000000'
 
 def perr_dsts(N:float, mu_grid:np.array, beta_grid:np.array, sigma:float, num_samples:int, strawberry:bool=False) -> np.array:
         '''
@@ -28,15 +28,15 @@ def perr_dsts(N:float, mu_grid:np.array, beta_grid:np.array, sigma:float, num_sa
             gauss = hermgauss(100)
 
             for k, mu in enumerate(mu_grid):
-
+                beta_max = mu + (mu - 1)/(2*N)
                 print(f"\rProgress: {k+1}/{len(mu_grid)}", end="", flush=True)
 
                 if mu >= mu_min:
                      
                     for i, beta in enumerate(beta_grid):
-
-                        p = theory_point_dsts(N, beta, mu, sigma, gauss)
-                        p_err[k, i] = np.random.binomial(num_samples, p) / num_samples
+                        if beta <= beta_max:
+                            p = theory_point_dsts(N, beta, mu, sigma, gauss)
+                            p_err[k, i] = np.random.binomial(num_samples, p) / num_samples
         #============================================   
         else:
 
@@ -190,7 +190,7 @@ def plot_homodyne_perr(sigmas:list, colors_light:list, colors_dark:list, dts:str
     Plots the homodyne error probability for dts and dsts.
     dts and dsts can only take the values 'data', 'theory', 'all', or False
     '''
-
+    
     valid_args = {'data', 'theory', 'all', False}
 
     if dts not in valid_args or dsts not in valid_args:
@@ -216,13 +216,14 @@ def plot_homodyne_perr(sigmas:list, colors_light:list, colors_dark:list, dts:str
         z_surface_dts = np.zeros_like(N_surface_dts)
         perr_surface_dts = np.zeros_like(N_surface_dts)
 
+        mu_min = 1/(1+2*N_dts)
         #-------------------------  Theoretical curve  -------------------------
         
-        for k in range(len(beta_dts)):
-            for l in range(len(beta_dts)):
-
-                perr_surface_dts [k, l] = perr_dts[k]
-                z_surface_dts[k, l] = theory_point_dts(N_dts, mus_dts[k], sigma, gauss)
+        for k in range(len(mus_dts)):
+            if mus_dts[k] >= mu_min:
+                for l in range(len(beta_dts)):
+                        perr_surface_dts [k, l] = perr_dts[k]
+                        z_surface_dts[k, l] = theory_point_dts(N_dts, mus_dts[k], sigma, gauss)
         
         #-------------------------  R^2  -------------------------
         
@@ -262,9 +263,10 @@ def plot_homodyne_perr(sigmas:list, colors_light:list, colors_dark:list, dts:str
         z_surface_dsts = np.zeros_like(mu_surface_dsts)
 
         for k in range(len(mus_dsts)):
+            beta_max = mus_dsts[k] + (mus_dsts[k] - 1)/(2*N_dsts)
             for l in range(len(beta_dsts)):
-
-                z_surface_dsts[k, l] = theory_point_dsts(N_dsts, beta_dsts[l], mus_dsts[k], sigma, gauss)
+                if beta_dts[l] <= beta_max:
+                    z_surface_dsts[k, l] = theory_point_dsts(N_dsts, beta_dsts[l], mus_dsts[k], sigma, gauss)
         
         #-------------------------  R^2  -------------------------
         
@@ -415,11 +417,12 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
         # ------------- OPTIMAL ----------------------
 
         # Minima along beta for each N
-        idx = np.argmin(perr_dsts, axis=1)   
-        beta_opt = beta[idx]
-        beta_opt_theoretical = np.zeros_like(mus_grid)
+        valid_rows = ~np.all(np.isnan(perr_dsts), axis=1)
+        beta_opt = np.full(len(mus_grid), np.nan)
+        idx = np.nanargmin(perr_dsts[valid_rows], axis=1)
+        beta_opt[valid_rows] = beta[idx]
 
-        
+        beta_opt_theoretical = np.zeros_like(mus_grid)
         for idx, m in enumerate(mus_grid):
             beta_opt_theoretical[idx] = beta_opt_theory(N, m, sigma, gauss)
         beta_opt_dict[f'sigma_{sigma}'] = beta_opt
