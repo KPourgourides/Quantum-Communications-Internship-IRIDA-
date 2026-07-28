@@ -117,7 +117,8 @@ def theory_point_dss(N:float, beta:float, mu:float, sigma:float, gauss:tuple) ->
         '''
         x_gh, w_gh = gauss
 
-        a = np.sqrt(N*(1-beta)+(mu-1)*(1+2*N*beta)/(2*mu))
+        a2 = N*(1-beta)+(mu-1)*(1+2*N*beta)/(2*mu)
+        a = np.sqrt(np.clip(a2, 0, None))
         r = np.arcsinh(np.sqrt(N * beta))
         phi = np.sqrt(2) * sigma * x_gh
         V = (np.exp(-2*r) * np.cos(phi)**2 + np.exp(2*r) * np.sin(phi)**2)/mu
@@ -297,7 +298,13 @@ def beta_opt_theory(N:float, mu:float, sigma:float, gauss:tuple) -> float:
         '''
         return theory_point_dss(N, beta, mu, sigma, gauss)
 
-    res = minimize_scalar(objective, bounds=(0,1), method="bounded")
+    beta_max = mu + (mu - 1)/(2*N)
+
+    if beta_max <= 0:
+        return np.nan
+
+    res = minimize_scalar(objective, bounds=(0, beta_max), method="bounded")
+    
     return res.x
 
 
