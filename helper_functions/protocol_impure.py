@@ -251,6 +251,54 @@ def plot_homodyne_perr(sigmas:list, colors_light:list, colors_dark:list, cs:str|
         fig.show()
 
 #################################################################################################################
+def beta_threshold_theory(N: float, mu: float, sigma: float, gauss: tuple) -> float:
+    """
+    Finds the threshold squeezing fraction β_th for fixed N, μ and σ by solving
+
+        P_err,DSS(β) = P_err,CS
+
+    over the physically allowed interval.
+    """
+
+    point_cs = theory_point_cs(N, mu, sigma, gauss)
+
+    def F(beta):
+        return theory_point_dss(N, beta, mu, sigma, gauss) - point_cs
+
+    # ---------- Physical upper bound ----------
+    beta_phys_max = mu + (mu - 1) / (2 * N)
+
+    # No physical DSS exists
+    if beta_phys_max <= 0:
+        return np.nan
+
+    # ---------- Locate the minimum of F ----------
+    beta_grid = np.linspace(0, beta_phys_max, 500)
+    F_grid = np.array([F(b) for b in beta_grid])
+
+    beta_min = beta_grid[np.argmin(F_grid)]
+
+    # ---------- Find the second intersection ----------
+    try:
+        return brentq(F, beta_min, beta_phys_max)
+
+    except ValueError:
+        print(f"No root for mu = {mu:.4f}")
+        return np.nan
+
+def beta_opt_theory(N:float, mu:float, sigma:float, gauss:tuple) -> float:
+    '''
+    Utilized an optimization method to find the value of β in [0,1] which minimizes the homodyne error probability;
+    thus, the optimal value of β.
+    '''
+    def objective(beta:float):
+        '''
+        Defined the objective function for the minimization, which is the homodyne error probability
+        '''
+        return theory_point_dss(N, beta, mu, sigma, gauss)
+
+    res = minimize_scalar(objective, bounds=(0,1), method="bounded")
+    return res.x
 
 
 def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = False, th:bool = True) -> dict:
@@ -278,6 +326,7 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
         perr_dss =  data_dss["perr"]
         beta = data_dss["beta_grid"]
         mus_grid = data_dss["mus_grid"]
+        N = data_dss["N"]
     
         mus_surface, beta_surface = np.meshgrid(mus_grid, beta, indexing="ij")
         perr_surface_cs = np.zeros_like(mus_surface)
@@ -306,12 +355,12 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
         mask = (mu_intersection > 0.06) & (beta_intersection > 0.01)
         
         # Find theoretical values for β_th
-        '''
+        
         beta_th = []
-        for n in N_intersection:
-            beta_th.append(beta_threshold_theory(n, sigma, gauss))
+        for m in mu_intersection:
+            beta_th.append(beta_threshold_theory(N, m, sigma, gauss))
         beta_th= np.array(beta_th)
-        '''
+    
         #-------------------------  R^2  THRESHOLD -------------------------
         '''
         ss_res_th = np.sum((beta_intersection[mask] - beta_th[mask])**2)
@@ -323,30 +372,30 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
         # Minima along beta for each N
         idx = np.argmin(perr_dss, axis=1)   
         beta_opt = beta[idx]
-        #beta_opt_theoretical = np.zeros_like(N)
+        beta_opt_theoretical = np.zeros_like(mus_grid)
 
-        '''
-        for idx, n in enumerate(N):
-            beta_opt_theoretical[idx] = beta_opt_theory(n, sigma, gauss)
+        
+        for idx, m in enumerate(mus_grid):
+            beta_opt_theoretical[idx] = beta_opt_theory(N, m, sigma, gauss)
         beta_opt_dict[f'sigma_{sigma}'] = beta_opt
 
         #-------------------------  R^2 OPTIMAL  -------------------------
         ss_res_opt = np.sum((beta_opt[1:] - beta_opt_theoretical[1:])**2)
         ss_tot_opt = np.sum((beta_opt[1:] - np.mean(beta_opt[1:]))**2)
         R2_opt = 1 - ss_res_opt/ss_tot_opt
-        '''
+        
 
         if th:
             
             plt.scatter(mu_intersection[mask], beta_intersection[mask], s=30, edgecolors='k', color=colors_th[i], marker='D', zorder=10, 
                         label = fr'$\beta_{{\rm th}}$: σ = {sigma}')
-            #plt.fill_between(N_intersection[mask], beta_th[mask], 0, alpha=0.8, zorder=0, color=colors_th[i])
-            #plt.plot(N_intersection, beta_th, color='k', linewidth = 3)
+            plt.fill_between(mu_intersection[mask], beta_th[mask], 0, alpha=0.8, zorder=0, color=colors_th[i])
+            plt.plot(mu_intersection, beta_th, color='k', linewidth = 3)
 
         if opt:
             plt.scatter(mus_grid[1:], beta_opt[1:], color=colors_opt[i], edgecolors='k', s=50, marker='H', zorder=10, 
                         label = fr'$\beta_{{\rm opt}}$: σ = {sigma}')
-            #plt.plot(N[1:], beta_opt_theoretical[1:], color='k', linewidth = 3)
+            plt.plot(mus_grid[1:], beta_opt_theoretical[1:], color='k', linewidth = 3)
         
         plt.xlabel(r'$\mu$ (Purity of seed state)')
         plt.ylabel(r'$\beta$ (Squeezing Fraction)')
