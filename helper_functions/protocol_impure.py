@@ -10,110 +10,149 @@ from numpy.polynomial.hermite import hermgauss
 import matplotlib.pyplot as plt
 from scipy.optimize import brentq, minimize_scalar
 
-def perr_dss(N:float, mus_grid:np.array, beta_grid:np.array, sigma:float, num_samples:int) -> np.array:
+global DATAPATH_DTS, DATAPATH_DSTS
+DATAPATH_DTS = 'data/DTS/perr_dts_N2_mu101_S1000000000'
+DATAPATH_DSTS = 'data/DSTS/perr_dsts_N2_b101_mu101_S1000000000'
+
+def perr_dsts(N:float, mu_grid:np.array, beta_grid:np.array, sigma:float, num_samples:int, strawberry:bool=False) -> np.array:
         '''
-        Experimental calculation of the homodyne error probability for displaced squeezed states
+        Experimental calculation of the homodyne error probability for displaced squeezed thermal states
         '''
-        # Check beta_grid
-        eng = sf.Engine("gaussian")
-        p_err = np.full((len(mus_grid), len(beta_grid)), np.nan)
+        p_err = np.full((len(mu_grid), len(beta_grid)), np.nan)
         mu_min = 1/(1+2*N)
+
+        #Calculation of error probability
+        #============================================        
+        if not strawberry:
+
+            gauss = hermgauss(100)
+
+            for k, mu in enumerate(mu_grid):
+
+                print(f"\rProgress: {k+1}/{len(mu_grid)}", end="", flush=True)
+
+                if mu >= mu_min:
+                     
+                    for i, beta in enumerate(beta_grid):
+
+                        p = theory_point_dsts(N, beta, mu, sigma, gauss)
+                        p_err[k, i] = np.random.binomial(num_samples, p) / num_samples
+        #============================================   
+        else:
+
+            eng = sf.Engine("gaussian")
         
+            for i, mu in enumerate(mu_grid):
+                if mu >= mu_min:
 
-        for i, mu in enumerate(mus_grid):
-            if mu >= mu_min:
-
-                alphas2 = N*(1-beta_grid)+(mu-1)*(1+2*N*beta_grid)/(2*mu)
-                alpha_valid_indices = np.where(alphas2 >= 0)[0]
-                alphas = np.sqrt(alphas2[alpha_valid_indices])
-                Nth = (1 - mu)/(2*mu)
+                    alphas2 = N*(1-beta_grid)+(mu-1)*(1+2*N*beta_grid)/(2*mu)
+                    alpha_valid_indices = np.where(alphas2 >= 0)[0]
+                    alphas = np.sqrt(alphas2[alpha_valid_indices])
+                    Nth = (1 - mu)/(2*mu)
                 
-                print(f"\rProgress: {i+1}/{len(mus_grid)}", end="", flush=True)
+                    print(f"\rProgress: {i+1}/{len(mu_grid)}", end="", flush=True)
 
-                for local_idx, global_idx in enumerate(alpha_valid_indices):
+                    for local_idx, global_idx in enumerate(alpha_valid_indices):
         
-                        wrong_sign_counter = 0
-                        r_s = math.asinh(np.sqrt(N*beta_grid[global_idx]))
+                            wrong_sign_counter = 0
+                            r_s = math.asinh(np.sqrt(N*beta_grid[global_idx]))
 
-                        # Choose phase from Gaussian distribution
-                        #============================================
-                        phis = np.random.normal(0, sigma, size = num_samples)
-                        
+                            # Choose phase from Gaussian distribution
+                            #============================================
+                            phis = np.random.normal(0, sigma, size = num_samples)
 
-                        for phi in phis:
+                            for phi in phis:
 
-                            coherent_sign = np.random.choice([1, -1])
-                            prog = sf.Program(1)
+                                coherent_sign = np.random.choice([1, -1])
+                                prog = sf.Program(1)
 
-                            with prog.context as q:
-                                Thermal(Nth) | q
-                                Sgate(r_s, 0) | q[0] 
-                                Dgate(coherent_sign*alphas[local_idx]) | q
-                                Rgate(phi) | q
-                                MeasureHomodyne(0) | q
+                                with prog.context as q:
+                                    Thermal(Nth) | q
+                                    Sgate(r_s, 0) | q[0] 
+                                    Dgate(coherent_sign*alphas[local_idx]) | q
+                                    Rgate(phi) | q
+                                    MeasureHomodyne(0) | q
 
-                            result = eng.run(prog)
-                            eng.reset()
-                            result_sign = np.sign(result.samples[0][0])
+                                result = eng.run(prog)
+                                eng.reset()
+                                result_sign = np.sign(result.samples[0][0])
 
-                            if (result_sign>=0 and coherent_sign<0) or (result_sign<0 and coherent_sign>0):
-                                wrong_sign_counter+= 1
+                                if (result_sign>=0 and coherent_sign<0) or (result_sign<0 and coherent_sign>0):
+                                    wrong_sign_counter+= 1
 
-                        p_err[i][global_idx] = wrong_sign_counter/num_samples
+                            p_err[i][global_idx] = wrong_sign_counter/num_samples
 
         return p_err
 
 
-def perr_cs(N:float, mus_grid:np.array, sigma:float, num_samples:int) -> np.array:
+def perr_dts(N:float, mu_grid:np.array, sigma:float, num_samples:int, strawberry:bool=False) -> np.array:
         '''
         Experimental calculation of the homodyne error probability for coherent states
         '''
-        # Check beta_grid
-        eng = sf.Engine("gaussian")
-        p_err = np.full((len(mus_grid)), np.nan)
+
+        p_err = np.full((len(mu_grid)), np.nan)
         mu_min = 1/(1+2*N)
-        
 
-        for i, mu in enumerate(mus_grid):
-            if mu >= mu_min:
+        #Calculation of error probability
+        #============================================
+        if not strawberry:
+             
+            gauss = hermgauss(100)
 
-                alpha = np.sqrt(N+(mu-1)/(2*mu))
-                Nth = (1 - mu)/(2*mu)
-                
-                print(f"\rProgress: {i+1}/{len(mus_grid)}", end="", flush=True)
+            for i, mu in enumerate(mu_grid):
 
-                wrong_sign_counter = 0
+                if mu >= mu_min:
 
-                # Choose phase from Gaussian distribution
-                #============================================
+                    print(f"\rProgress: {i+1}/{len(mu_grid)}", end="", flush=True)
 
-                phis = np.random.normal(0, sigma, size = num_samples)
+                    p = theory_point_dts(N, mu, sigma, gauss)
+                    p_err[i] = np.random.binomial(num_samples, p) / num_samples
+        #============================================
+        else:
+             
+            eng = sf.Engine("gaussian")
+            for i, mu in enumerate(mu_grid):
 
-                for phi in phis:
+                if mu >= mu_min:
 
-                    coherent_sign = np.random.choice([1, -1])
-                    prog = sf.Program(1)
+                    alpha = np.sqrt(N+(mu-1)/(2*mu))
+                    Nth = (1 - mu)/(2*mu)
 
-                    with prog.context as q:
-                        Thermal(Nth) | q
-                        Dgate(coherent_sign*alpha) | q
-                        Rgate(phi) | q
-                        MeasureHomodyne(0) | q
+                    print(f"\rProgress: {i+1}/{len(mu_grid)}", end="", flush=True)
 
-                    result = eng.run(prog)
-                    eng.reset()
-                    result_sign = np.sign(result.samples[0][0])
-                    if (result_sign>=0 and coherent_sign<0) or (result_sign<0 and coherent_sign>0):
-                        wrong_sign_counter+= 1
+                    wrong_sign_counter = 0
 
-                p_err[i] = wrong_sign_counter/num_samples
+                    # Choose phase from Gaussian distribution
+                    #============================================
+
+                    phis = np.random.normal(0, sigma, size = num_samples)
+
+                    for phi in phis:
+
+                        coherent_sign = np.random.choice([1, -1])
+                        prog = sf.Program(1)
+
+                        with prog.context as q:
+                            Thermal(Nth) | q
+                            Dgate(coherent_sign*alpha) | q
+                            Rgate(phi) | q
+                            MeasureHomodyne(0) | q
+
+                        result = eng.run(prog)
+                        eng.reset()
+                        result_sign = np.sign(result.samples[0][0])
+                        if (result_sign>=0 and coherent_sign<0) or (result_sign<0 and coherent_sign>0):
+                            wrong_sign_counter+= 1
+
+                    p_err[i] = wrong_sign_counter/num_samples
+
         return p_err
 
 
-def theory_point_dss(N:float, beta:float, mu:float, sigma:float, gauss:tuple) -> float:
+def theory_point_dsts(N:float, beta:float, mu:float, sigma:float, gauss:tuple) -> float:
         '''
-        Numerical calculation of the theoretical homodyne error probability for displaced squeezed states,
-        works for a single (N, β) points.
+        Numerical calculation of the theoretical homodyne error probability for displaced squeezed thermal states,
+        works for a single (N, β, μ, σ) points.
         '''
         x_gh, w_gh = gauss
 
@@ -128,10 +167,10 @@ def theory_point_dss(N:float, beta:float, mu:float, sigma:float, gauss:tuple) ->
 
         return integral
 
-def theory_point_cs(N:float, mu:float, sigma:float, gauss:tuple) -> float:
+def theory_point_dts(N:float, mu:float, sigma:float, gauss:tuple) -> float:
         '''
-        Numerical calculation of the theoretical homodyne error probability for displaced squeezed states,
-        works for a single (N, β) points.
+        Numerical calculation of the theoretical homodyne error probability for displaced thermal states,
+        works for a single (N, σ, μ) points.
         '''
         x_gh, w_gh = gauss
 
@@ -146,109 +185,108 @@ def theory_point_cs(N:float, mu:float, sigma:float, gauss:tuple) -> float:
         return integral
 
 
-def plot_homodyne_perr(sigmas:list, colors_light:list, colors_dark:list, cs:str|bool = False, dss:str|bool = False) -> None:
+def plot_homodyne_perr(sigmas:list, colors_light:list, colors_dark:list, dts:str|bool = False, dsts:str|bool = False) -> None:
     '''
-    Plots the homodyne error probability for CS and DSS.
-    CS and DSS can only take the values 'data', 'theory', 'all', or False
+    Plots the homodyne error probability for dts and dsts.
+    dts and dsts can only take the values 'data', 'theory', 'all', or False
     '''
 
     valid_args = {'data', 'theory', 'all', False}
 
-    if cs not in valid_args or dss not in valid_args:
-         raise KeyError("CS and DSS can only take the values 'data', 'theory', 'all', or False")
+    if dts not in valid_args or dsts not in valid_args:
+         raise KeyError("dts and dsts can only take the values 'data', 'theory', 'all', or False")
 
     n_gh = 100
     gauss = hermgauss(n_gh)
 
     fig = go.Figure()
     
-    #============================  CS  ============================
+    #============================  dts  ============================
     for i, sigma in enumerate(sigmas):
 
         #-------------------------  Load data  -------------------------
-        data_cs = np.load(f"data/CS/perr_cs_N2_mu21_S10000_sigma{sigma}.npz")
+        data_dts = np.load(f"{DATAPATH_DTS}_sigma{sigma}.npz")
 
-        N_cs = data_cs["N"]
-        perr_cs =  data_cs["perr"]
-        mus_cs = data_cs["mus_grid"]
-        beta_cs = np.linspace(0, 1, len(mus_cs))
+        N_dts = data_dts["N"]
+        perr_dts =  data_dts["perr"]
+        mus_dts = data_dts["mus_grid"]
+        beta_dts = np.linspace(0, 1, len(mus_dts))
         
-        N_surface_cs, beta_surface_cs = np.meshgrid(mus_cs, beta_cs, indexing="ij")
-        z_surface_cs = np.zeros_like(N_surface_cs)
-        perr_surface_cs = np.zeros_like(N_surface_cs)
+        N_surface_dts, beta_surface_dts = np.meshgrid(mus_dts, beta_dts, indexing="ij")
+        z_surface_dts = np.zeros_like(N_surface_dts)
+        perr_surface_dts = np.zeros_like(N_surface_dts)
 
         #-------------------------  Theoretical curve  -------------------------
         
-        for k in range(len(beta_cs)):
-            for l in range(len(beta_cs)):
+        for k in range(len(beta_dts)):
+            for l in range(len(beta_dts)):
 
-                perr_surface_cs [k, l] = perr_cs[k]
-                z_surface_cs[k, l] = theory_point_cs(N_cs, mus_cs[k], sigma, gauss)
+                perr_surface_dts [k, l] = perr_dts[k]
+                z_surface_dts[k, l] = theory_point_dts(N_dts, mus_dts[k], sigma, gauss)
         
         #-------------------------  R^2  -------------------------
         
-        ss_res_cs = np.sum((perr_cs - z_surface_cs[:,0])**2)
-        ss_tot_cs = np.sum((perr_cs - np.mean(perr_cs))**2)
-        R2_cs = 1 - ss_res_cs/ss_tot_cs
+        ss_res_dts = np.sum((perr_dts - z_surface_dts[:,0])**2)
+        ss_tot_dts = np.sum((perr_dts - np.mean(perr_dts))**2)
+        R2_dts = 1 - ss_res_dts/ss_tot_dts
         
         #-------------------------  Plot  -------------------------
         
-        if cs in ['theory', 'all']:
+        if dts in ['theory', 'all']:
         
-            fig.add_trace(go.Surface(x=N_surface_cs, y=beta_surface_cs, z=z_surface_cs, surfacecolor=np.zeros_like(z_surface_cs), 
+            fig.add_trace(go.Surface(x=N_surface_dts, y=beta_surface_dts, z=z_surface_dts, surfacecolor=np.zeros_like(z_surface_dts), 
                                 colorscale=[[0.0, colors_light[i]], [1.0, colors_light[i]]], showscale=False))
         
-        if cs in ['data', 'all']:
+        if dts in ['data', 'all']:
             
-            fig.add_trace(go.Scatter3d(x=N_surface_cs.ravel(), y=beta_surface_cs.ravel(), z=perr_surface_cs.ravel(), mode="markers", 
+            fig.add_trace(go.Scatter3d(x=N_surface_dts.ravel(), y=beta_surface_dts.ravel(), z=perr_surface_dts.ravel(), mode="markers", 
                                 marker=dict(size=3, color=colors_dark[i])))
             
 
     
-    #============================  DSS  ============================
+    #============================  dsts  ============================
 
     for i, sigma in enumerate(sigmas):
 
         #-------------------------  Load data  -------------------------
-        data_dss = np.load(f"data/DSS/perr_dss_N2_b21_mu21_S10000_sigma{sigma}.npz")
-        N_dss =  data_dss["N"]
-        beta_dss =  data_dss["beta_grid"]
-        perr_dss = data_dss["perr"]
-        mus_dss = data_dss["mus_grid"]
+        data_dsts = np.load(f"{DATAPATH_DSTS}_sigma{sigma}.npz")
+        N_dsts =  data_dsts["N"]
+        beta_dsts =  data_dsts["beta_grid"]
+        perr_dsts = data_dsts["perr"]
+        mus_dsts = data_dsts["mus_grid"]
 
-        mu_surface_dss, beta_surface_dss = np.meshgrid(mus_dss, beta_dss, indexing="ij")
+        mu_surface_dsts, beta_surface_dsts = np.meshgrid(mus_dsts, beta_dsts, indexing="ij")
         
-
         #-------------------------  Theoretical curve  -------------------------
         
-        z_surface_dss = np.zeros_like(mu_surface_dss)
+        z_surface_dsts = np.zeros_like(mu_surface_dsts)
 
-        for k in range(len(mus_dss)):
-            for l in range(len(beta_dss)):
+        for k in range(len(mus_dsts)):
+            for l in range(len(beta_dsts)):
 
-                z_surface_dss[k, l] = theory_point_dss(N_dss, beta_dss[l], mus_dss[k], sigma, gauss)
+                z_surface_dsts[k, l] = theory_point_dsts(N_dsts, beta_dsts[l], mus_dsts[k], sigma, gauss)
         
         #-------------------------  R^2  -------------------------
         
-        ss_res_dss = np.sum((perr_dss - z_surface_dss)**2)
-        ss_tot_dss = np.sum((perr_dss - np.mean(perr_dss))**2)
-        R2_dss = 1 - ss_res_dss/ss_tot_dss
+        ss_res_dsts = np.sum((perr_dsts - z_surface_dsts)**2)
+        ss_tot_dsts = np.sum((perr_dsts - np.mean(perr_dsts))**2)
+        R2_dsts = 1 - ss_res_dsts/ss_tot_dsts
         
         #-------------------------  Plot  -------------------------
         
-        if dss in ['theory', 'all']:
-                fig.add_trace(go.Surface( x=mu_surface_dss, y=beta_surface_dss, z=z_surface_dss, surfacecolor=np.zeros_like(z_surface_dss), 
+        if dsts in ['theory', 'all']:
+                fig.add_trace(go.Surface( x=mu_surface_dsts, y=beta_surface_dsts, z=z_surface_dsts, surfacecolor=np.zeros_like(z_surface_dsts), 
                                 colorscale=[[0.0, colors_dark[i]], [1.0, colors_dark[i]]], showscale=False))
         
-        if dss in ['data', 'all']:
-                fig.add_trace(go.Scatter3d(x=mu_surface_dss.ravel(), y=beta_surface_dss.ravel(), z=perr_dss.ravel(),
+        if dsts in ['data', 'all']:
+                fig.add_trace(go.Scatter3d(x=mu_surface_dsts.ravel(), y=beta_surface_dsts.ravel(), z=perr_dsts.ravel(),
                 mode="markers", marker=dict(size=3, color=colors_light[i])))
                 
 
         fig.update_layout(scene=dict(xaxis_title="μ", yaxis_title=r"β", zaxis = dict(title="P_err", type="log"), 
                             aspectmode ="cube"), width=900, height=750)
         
-    if cs or dss:
+    if dts or dsts:
         fig.show()
 
 #################################################################################################################
@@ -256,20 +294,20 @@ def beta_threshold_theory(N: float, mu: float, sigma: float, gauss: tuple) -> fl
     """
     Finds the threshold squeezing fraction β_th for fixed N, μ and σ by solving
 
-        P_err,DSS(β) = P_err,CS
+        P_err,dsts(β) = P_err,dts
 
     over the physically allowed interval.
     """
 
-    point_cs = theory_point_cs(N, mu, sigma, gauss)
+    point_dts = theory_point_dts(N, mu, sigma, gauss)
 
     def F(beta):
-        return theory_point_dss(N, beta, mu, sigma, gauss) - point_cs
+        return theory_point_dsts(N, beta, mu, sigma, gauss) - point_dts
 
     # ---------- Physical upper bound ----------
     beta_phys_max = mu + (mu - 1) / (2 * N)
 
-    # No physical DSS exists
+    # No physical dsts exists
     if beta_phys_max <= 0:
         return np.nan
 
@@ -296,7 +334,7 @@ def beta_opt_theory(N:float, mu:float, sigma:float, gauss:tuple) -> float:
         '''
         Defined the objective function for the minimization, which is the homodyne error probability
         '''
-        return theory_point_dss(N, beta, mu, sigma, gauss)
+        return theory_point_dsts(N, beta, mu, sigma, gauss)
 
     beta_max = mu + (mu - 1)/(2*N)
 
@@ -326,31 +364,31 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
 
         # ------------- LOAD DATA ----------------------
                
-        data_cs = np.load(f"data/CS/perr_cs_N2_mu21_S10000_sigma{sigma}.npz")
-        perr_cs =  data_cs["perr"]
+        data_dts = np.load(f"{DATAPATH_DTS}_sigma{sigma}.npz")
+        perr_dts =  data_dts["perr"]
 
-        data_dss = np.load(f"data/DSS/perr_dss_N2_b21_mu21_S10000_sigma{sigma}.npz")
-        perr_dss =  data_dss["perr"]
-        beta = data_dss["beta_grid"]
-        mus_grid = data_dss["mus_grid"]
-        N = data_dss["N"]
+        data_dsts = np.load(f"{DATAPATH_DSTS}_sigma{sigma}.npz")
+        perr_dsts =  data_dsts["perr"]
+        beta = data_dsts["beta_grid"]
+        mus_grid = data_dsts["mus_grid"]
+        N = data_dsts["N"]
     
         mus_surface, beta_surface = np.meshgrid(mus_grid, beta, indexing="ij")
-        perr_surface_cs = np.zeros_like(mus_surface)
+        perr_surface_dts = np.zeros_like(mus_surface)
 
         for k in range(len(mus_grid)):
             for l in range(len(beta)):
 
-                perr_surface_cs [k, l] = perr_cs[k]
+                perr_surface_dts [k, l] = perr_dts[k]
 
 
         #-------------------------  THRESHOLD  -------------------------
         
         # Find intersection points from two surfaces
-        difference = perr_surface_cs - perr_dss
+        difference = perr_surface_dts - perr_dsts
         
-        cs = plt.contour(mus_surface, beta_surface, difference, levels=[0], alpha=0)
-        path = cs.get_paths()[0]
+        dts = plt.contour(mus_surface, beta_surface, difference, levels=[0], alpha=0)
+        path = dts.get_paths()[0]
         verts = path.vertices
 
         # sort intersection points and filter out the initial noisy points
@@ -377,7 +415,7 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
         # ------------- OPTIMAL ----------------------
 
         # Minima along beta for each N
-        idx = np.argmin(perr_dss, axis=1)   
+        idx = np.argmin(perr_dsts, axis=1)   
         beta_opt = beta[idx]
         beta_opt_theoretical = np.zeros_like(mus_grid)
 
