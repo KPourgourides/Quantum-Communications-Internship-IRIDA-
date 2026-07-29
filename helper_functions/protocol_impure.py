@@ -454,5 +454,38 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
         plt.tight_layout()
     plt.show()
         
-
     return beta_opt_dict
+
+
+
+def sigma_threshold_theory(N:float, mu_grid:float) -> float:
+
+    gauss = hermgauss(100)
+
+    def F(sigma):
+
+        beta_opt = beta_opt_theory(N, mu, sigma, gauss)
+        p_err_dsts = theory_point_dsts(N, beta_opt, mu, sigma, gauss)
+        p_err_dts = theory_point_dts(N, mu, sigma, gauss)
+        return p_err_dsts - p_err_dts
+     
+    min_mu = 1/(1 + 2*N)
+    sigma_low, sigma_high = 0, 1
+    sigma_th = np.full(len(mu_grid), np.nan)
+
+    for i, mu in enumerate(mu_grid):
+
+        if mu > min_mu:
+
+            try:
+                sigma_th[i] = brentq(F, sigma_low, sigma_high)
+            except:
+                 sigma_th[i] = 1
+
+    return sigma_th
+
+             
+
+               
+
+
