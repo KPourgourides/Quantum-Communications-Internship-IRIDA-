@@ -9,10 +9,11 @@ import plotly.graph_objects as go
 from numpy.polynomial.hermite import hermgauss
 import matplotlib.pyplot as plt
 from scipy.optimize import brentq, minimize_scalar
+from scipy.interpolate import interp1d
 
 global DATAPATH_DTS, DATAPATH_DSTS
-DATAPATH_DTS = 'data/DTS/perr_dts_N2_mu201_S1000000000'
-DATAPATH_DSTS = 'data/DSTS/perr_dsts_N2_b201_mu201_S1000000000'
+DATAPATH_DTS = 'data/DTS/perr_dts_N4_mu101_S1000000000'
+DATAPATH_DSTS = 'data/DSTS/perr_dsts_N4_b402_mu101_S1000000000'
 
 def perr_dsts(N:float, mu_grid:np.array, beta_grid:np.array, sigma:float, num_samples:int, strawberry:bool=False) -> np.array:
         '''
@@ -265,7 +266,7 @@ def plot_homodyne_perr(sigmas:list, colors_light:list, colors_dark:list, dts:str
         for k in range(len(mus_dsts)):
             beta_max = mus_dsts[k] + (mus_dsts[k] - 1)/(2*N_dsts)
             for l in range(len(beta_dsts)):
-                if beta_dts[l] <= beta_max:
+                if beta_dsts[l] <= beta_max:
                     z_surface_dsts[k, l] = theory_point_dsts(N_dsts, beta_dsts[l], mus_dsts[k], sigma, gauss)
         
         #-------------------------  R^2  -------------------------
@@ -399,7 +400,7 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
         mu_intersection, beta_intersection = zip(*sorted(zip(mu_intersection, beta_intersection)))
         mu_intersection = np.array(mu_intersection)
         beta_intersection = np.array(beta_intersection)
-        mask = (mu_intersection > 0.06) & (beta_intersection > 0.01)
+        mask = (mu_intersection > 0) & (beta_intersection > 0)
         
         # Find theoretical values for β_th
         
@@ -409,11 +410,11 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
         beta_th= np.array(beta_th)
     
         #-------------------------  R^2  THRESHOLD -------------------------
-        '''
+        
         ss_res_th = np.sum((beta_intersection[mask] - beta_th[mask])**2)
         ss_tot_th = np.sum((beta_intersection[mask] - np.mean(beta_intersection[mask]))**2)
         R2_th = 1 - ss_res_th/ss_tot_th
-        '''
+        
         # ------------- OPTIMAL ----------------------
 
         # Minima along beta for each N
@@ -457,6 +458,124 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
     return beta_opt_dict
 
 
+def beta_optimal_finder(sigmas:list) -> dict:
+
+    '''
+    Plots the threshold and optimal value of the squeezing fraction β as a function of the average photon number for different sigmas.
+    '''
+    #---------- FIND THRESHOLD ----------
+    beta_opt_dict = {}
+
+    for i,sigma in enumerate(sigmas):
+
+        # ------------- LOAD DATA ----------------------
+               
+        data_dts = np.load(f"{DATAPATH_DTS}_sigma{sigma}.npz")
+        perr_dts =  data_dts["perr"]
+
+        data_dsts = np.load(f"{DATAPATH_DSTS}_sigma{sigma}.npz")
+        perr_dsts =  data_dsts["perr"]
+        beta = data_dsts["beta_grid"]
+        mus_grid = data_dsts["mus_grid"]
+        N = data_dsts["N"]
+    
+        mus_surface, beta_surface = np.meshgrid(mus_grid, beta, indexing="ij")
+        perr_surface_dts = np.zeros_like(mus_surface)
+
+        for k in range(len(mus_grid)):
+            for l in range(len(beta)):
+
+                perr_surface_dts [k, l] = perr_dts[k]
+        
+        # ------------- OPTIMAL ----------------------
+
+        # Minima along beta for each N
+        valid_rows = ~np.all(np.isnan(perr_dsts), axis=1)
+        beta_opt = np.full(len(mus_grid), np.nan)
+        idx = np.nanargmin(perr_dsts[valid_rows], axis=1)
+        beta_opt[valid_rows] = beta[idx]
+        beta_opt_dict[f'sigma_{sigma}'] = beta_opt
+        
+    return beta_opt_dict
+
+
+def beta_threshold_finder(sigmas: list) -> tuple[dict, dict]:
+    """
+    Finds the threshold β_th by extracting the contour and interpolating
+    it onto the fixed mus_grid.
+    """
+
+    beta_th_dict = {}
+    mus_th_dict = {}
+
+    for sigma in sigmas:
+
+        # ---------- Load data ----------
+        data_dts = np.load(f"{DATAPATH_DTS}_sigma{sigma}.npz")
+        perr_dts = data_dts["perr"]
+
+        data_dsts = np.load(f"{DATAPATH_DSTS}_sigma{sigma}.npz")
+        perr_dsts = data_dsts["perr"]
+        beta = data_dsts["beta_grid"]
+        mus_grid = data_dsts["mus_grid"]
+
+        mus_surface, beta_surface = np.meshgrid(
+            mus_grid, beta, indexing="ij"
+        )
+
+        perr_surface_dts = np.repeat(perr_dts[:, None], len(beta), axis=1)
+
+        # ---------- Threshold contour ----------
+        difference = perr_surface_dts - perr_dsts
+
+        contour = plt.contour(
+            mus_surface,
+            beta_surface,
+            difference,
+            levels=[0],
+            alpha=0
+        )
+
+        paths = contour.get_paths()
+
+        if len(paths) == 0:
+            beta_th_dict[f"sigma_{sigma}"] = np.full_like(mus_grid, np.nan)
+            mus_th_dict[f"sigma_{sigma}"] = mus_grid
+            continue
+
+        verts = paths[0].vertices
+
+        mu_intersection = verts[:, 0]
+        beta_intersection = verts[:, 1]
+
+        # Sort by μ
+        order = np.argsort(mu_intersection)
+        mu_intersection = mu_intersection[order]
+        beta_intersection = beta_intersection[order]
+
+        # Remove duplicate μ values (interp1d requires increasing x)
+        mu_unique, idx = np.unique(mu_intersection, return_index=True)
+        beta_unique = beta_intersection[idx]
+
+        # Interpolate onto mus_grid
+        interp = interp1d(
+            mu_unique,
+            beta_unique,
+            kind="linear",
+            bounds_error=False,
+            fill_value=np.nan,
+        )
+
+        beta_th = interp(mus_grid)
+
+        beta_th_dict[f"sigma_{sigma}"] = beta_th
+        mus_th_dict[f"sigma_{sigma}"] = mus_grid
+
+        plt.clf()   # remove invisible contour
+
+    return beta_th_dict
+        
+    
 
 def sigma_threshold_theory(N:float, mu_grid:float) -> float:
 
@@ -484,8 +603,22 @@ def sigma_threshold_theory(N:float, mu_grid:float) -> float:
 
     return sigma_th
 
-             
 
-               
+def sigma_threshold(N, betas, mus) -> float:
+
+    mu_min = 1/(1 + 2*N)
+    sigma_list = np.ones((len(mus)))
+
+    for sigma_key in betas.keys():
+        if 0 in betas[sigma_key] :
+            mu_indices = np.where(betas[sigma_key] == 0)[0]
+            sigma_th = float(sigma_key.split('_')[1])
+            for l in mu_indices:
+                if mus[l] > mu_min:
+                    if sigma_list[l] == 1:
+                        sigma_list[l] = sigma_th
+        
+                     
+    return sigma_list
 
 
