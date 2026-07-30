@@ -212,7 +212,7 @@ def plot_homodyne_perr(N:float, sigmas:list, colors_light:list, colors_dark:list
 
     n_gh = 100
     gauss = hermgauss(n_gh)
-
+    
     fig = go.Figure()
     
     #============================  dts  ============================
@@ -256,6 +256,7 @@ def plot_homodyne_perr(N:float, sigmas:list, colors_light:list, colors_dark:list
             
             fig.add_trace(go.Scatter3d(x=N_surface_dts.ravel(), y=beta_surface_dts.ravel(), z=perr_surface_dts.ravel(), mode="markers", 
                                 marker=dict(size=3, color=colors_dark[i])))
+
             
 
     
@@ -430,11 +431,11 @@ def beta_threshold_data(N: float, sigmas: list) -> dict:
         difference = perr_surface_dts - perr_dsts
 
         beta_th = np.full_like(mus_grid, np.nan, dtype=float)
-        min_mu = 1/(1+2*N)
+        mu_min = 1/(1+2*N)
 
         # ---------- Find beta threshold ----------
         for i, mu in enumerate(mus_grid):
-            if mu>=min_mu:
+            if mu>=mu_min:
                 diff_mu = difference[i, :]
 
                 # Remove NaNs for this μ only
@@ -480,7 +481,7 @@ def plot_squeezing(N:float, sigmas:list, colors_opt:list, colors_th:list, opt:bo
 
     n_gh = 100
     gauss = hermgauss(n_gh)
-    min_mu = 1/(1 + 2*N)
+    mu_min = 1/(1 + 2*N)
     if opt or th:
         plt.figure(figsize=(15,6), dpi=300)
     #---------- FIND THRESHOLD ----------
@@ -512,7 +513,7 @@ def plot_squeezing(N:float, sigmas:list, colors_opt:list, colors_th:list, opt:bo
         # Find theoretical values for β_th
         beta_th_theory = np.full((len(mus_grid)), np.nan)
         for idx_th, m in enumerate(mus_grid):
-            if m>=min_mu:
+            if m>=mu_min:
                 beta_th_theory[idx_th]=(beta_threshold_theory(N, m, sigma, gauss))
         beta_th_theory= np.array(beta_th_theory)
         
@@ -532,7 +533,7 @@ def plot_squeezing(N:float, sigmas:list, colors_opt:list, colors_th:list, opt:bo
         # Find theoretical values for β_opt
         beta_opt_theory = np.full((len(mus_grid)), np.nan)
         for idx_opt, m in enumerate(mus_grid):
-            if m>=min_mu:
+            if m>=mu_min:
                 beta_opt_theory[idx_opt] = beta_optimal_theory(N, m, sigma, gauss)
         
         #-------------------------  R^2 OPTIMAL  -------------------------
@@ -615,7 +616,11 @@ def sigma_threshold_data(N:float, sigmas:np.array, mus:np.array) -> np.array:
                 if mus[l] > mu_min:
                     if sigma_th_data[l] == 1:
                         sigma_th_data[l] = sigma_th
-          
+
+    for l,m in enumerate(mus): 
+        if mus[l] < mu_min:
+            sigma_th_data[l] = np.nan
+    
     return sigma_th_data
 
 def plot_sigma_threshold(N_vals:np.array, sigmas, mus_grid, colors_th, colors_points):
@@ -631,7 +636,7 @@ def plot_sigma_threshold(N_vals:np.array, sigmas, mus_grid, colors_th, colors_po
     
     for i, N in enumerate(N_vals):
         plt.plot(mus_grid, sigma_thresholds[i], color=colors_th[i], linewidth=3, label=f'N={N}')
-        plt.fill_between(mus_grid, sigma_thresholds[i], 0, color=colors_th[i], alpha=0.6)
+        plt.fill_between(mus_grid, sigma_thresholds[i], 0, color=colors_th[i], alpha=0.5)
         plt.axvline(x=1/(1+2*N), linestyle='--', color=colors_th[i])
 
         plt.plot(mus_grid, sigma_thresholds_data[i], '.', color = colors_points[i], alpha = 0.6)
@@ -649,57 +654,114 @@ def plot_sigma_threshold(N_vals:np.array, sigmas, mus_grid, colors_th, colors_po
 #                                   HELSTROM
 #======================================================================================
 
-def helstrom_bound(N:float, beta_opt_dict:dict, sigmas:np.array, fock_cutoff:int):
+def helstrom_bound(N:float, mus_grid:np.array, sigma:float, fock_cutoff:int, dsts = True):
 
-    N_grid = np.linspace(0, 2, 81)
+    beta_opt_array = beta_optimal_data(N, [sigma])[f'sigma_{sigma}']
 
-    if beta_opt_dict == 0:
-        beta_opt_array = np.zeros((len(sigmas)))
-    else:
-        beta_opt_array = np.zeros((len(sigmas)))
+    if not dsts:
+        beta_opt_array = np.zeros((len(mus_grid)))
 
-        for i,sigma in enumerate(sigmas):
-
-            beta_opt_array[i] = beta_opt_dict[f"sigma_{sigma}"][np.where(N_grid == N)[0][0]]
-
-
-    alpha = np.sqrt(N*(1-beta_opt_array)) 
     r_opt = np.arcsinh(np.sqrt(N*beta_opt_array))
+    alpha = np.full_like(mus_grid, np.nan, dtype=float)
+    mu_min = 1/(1+2*N)
+    valid = mus_grid > mu_min
 
-    def state(alpha, r, phi):
-
+    alpha[valid] = np.sqrt(N*(1-beta_opt_array[valid])+(mus_grid[valid]-1)*(1+2*N*beta_opt_array[valid])/(2*mus_grid[valid]))
+    
+    def state(alpha, r, mu, phi):
+        Nth = (1 - mu)/(2*mu)
         prog = sf.Program(1)
         with prog.context as q:
-            Vac | q[0]
-            Sgate(r) | q[0] 
-            Dgate(alpha) | q[0]
+            Thermal(Nth) | q
+            Sgate(r) | q
+            Dgate(alpha) | q
             Rgate(phi) | q
         #run the engine and get the state
         eng = sf.Engine("fock", backend_options={"cutoff_dim": fock_cutoff})
         result = eng.run(prog)
         return result.state.dm()
-    
+
     n_gh = 100
     gauss = hermgauss(n_gh)
     x, w = gauss
-    p_helstrom = np.zeros((len(sigmas)))
+    p_helstrom = np.full_like(mus_grid, np.nan, dtype=float)
+    phis = np.sqrt(2)*sigma*x
 
-    for j,sigma in enumerate(sigmas):
+    for j,mu in enumerate(mus_grid):
+        if mu>mu_min:
+            rho_1 = 0
+            rho_2 = 0
 
-        phis = np.sqrt(2)*sigma*x
-        rho_1 = 0
-        rho_2 = 0
+            for i, phi in enumerate(phis):
+                rho_1 +=  w[i]*state(alpha[j], r_opt[j], mu, phi)/np.sqrt(np.pi)
+                rho_2 +=  w[i]*state(-1*alpha[j], r_opt[j], mu, phi)/np.sqrt(np.pi)
 
-        for i,phi in enumerate(phis):
-            rho_1 +=  w[i]*state(alpha[j], r_opt[j], phis[i])/np.sqrt(np.pi)
-            rho_2 +=  w[i]*state(-1*alpha[j], r_opt[j], phis[i])/np.sqrt(np.pi)
+            Delta = rho_1 - rho_2
+            eigenvals = np.linalg.eigvalsh(Delta)
+            trace_norm = np.sum(np.abs(eigenvals))
 
-        Delta = rho_1 - rho_2
-        eigenvals = np.linalg.eigvalsh(Delta)
-        trace_norm = np.sum(np.abs(eigenvals))
-
-        p_helstrom[j] = 0.5*(1 - 0.5*trace_norm)
+            p_helstrom[j] = 0.5*(1 - 0.5*trace_norm)
     
     return p_helstrom
 
+def p_err_calculation(N, mus_grid, sigma, fock_cutoff):
+    p_helstrom_dsts = helstrom_bound(N, mus_grid, sigma, fock_cutoff, dsts=True)
+    p_helstrom_dts = helstrom_bound(N, mus_grid, sigma, fock_cutoff, dsts=False)
 
+    n_gh = 100
+    gauss = hermgauss(n_gh)
+    p_dsts_hd = np.full_like(mus_grid, None, dtype=float)
+    p_dts_hd = np.full_like(mus_grid, None, dtype=float)
+    mu_min = 1/(1+2*N)
+
+    for i,mu in enumerate(mus_grid):
+        if mu>mu_min:
+            beta_opt_theory = beta_optimal_theory(N, mu, sigma, gauss)
+            p_dsts_hd[i] = theory_point_dsts(N, beta_opt_theory, mu, sigma, gauss)
+            p_dts_hd[i] = theory_point_dts(N, mu, sigma, gauss)
+    return (p_helstrom_dsts, p_helstrom_dts), (p_dsts_hd, p_dts_hd)
+
+
+def plot_helstrom_vs_homodyne(p_helstrom, p_hd, N, sigma, mus_grid):
+
+    p_helstrom_dsts, p_helstrom_dts = p_helstrom
+    p_dsts_hd, p_dts_hd = p_hd
+
+    sigma_th = sigma_threshold_theory(N, mus_grid)
+    th=1e-2
+    idx = np.where((sigma_th > sigma - th) & (sigma_th < sigma + th))[0]
+    mu_th = (mus_grid[idx[-1]]+mus_grid[idx[0]])/2
+    #--------------------------------  PLOT --------------------------------
+
+    fig, ax = plt.subplots(1, 2, figsize=(10,5))
+    fig.suptitle(rf'$N={N}$, $\sigma={sigma}$', fontsize=16)
+
+    ax[0].set_title('DSTS')
+    ax[0].plot(mus_grid, p_helstrom_dsts, linestyle='-', color='k', label='Helstrom')
+    ax[0].plot(mus_grid, p_dsts_hd, linestyle='-', color='b', label='Homodyne')
+    ax[0].set_yscale('log')
+    ax[0].set_ylabel(r'$P_{err}$')
+
+    ax[1].set_title(rf'DTS')
+    ax[1].plot(mus_grid, p_helstrom_dts, linestyle='-', color='k', label='Helstrom')
+    ax[1].plot(mus_grid, p_dts_hd, linestyle='-', color='b', label='Homodyne')
+    ax[1].set_yscale('log')
+
+    for axis in ax:
+        axis.set_ylim(np.nanmin(p_helstrom_dsts)/2, 2*np.nanmax(p_helstrom_dsts))
+        axis.legend()
+        axis.set_xlabel(r'$\mu$')
+    plt.show()
+
+    mu_th_c = "#AD0B90"
+    fig, ax = plt.subplots(1, 1, figsize=(13,5), dpi=200)
+    fig.suptitle(rf'$N={N}$, $\sigma={sigma}$', fontsize=16)
+    ax.plot(mus_grid, p_helstrom_dsts-p_helstrom_dts, linestyle='-', color='k', label='Helstrom')
+    ax.plot(mus_grid, p_dsts_hd-p_dts_hd, linestyle='-', color= 'b', label='Homodyne')
+    ax.set_ylabel(r'$P^{(DSTS)}_{err}-P^{(DTS)}_{err}$')
+    ax.set_xlabel(r'$\mu$')
+    ax.axvline(x=mu_th, color = mu_th_c, linestyle = '--', label = r'$\sigma_{th}$ is reached', alpha=0.30)
+    ax.axvspan(mu_th, mus_grid[-1], color=mu_th_c, alpha=0.10)
+    ax.legend()
+    ax.axhline(y=0, color='gray', linestyle='--', linewidth=1)
+    plt.show()
