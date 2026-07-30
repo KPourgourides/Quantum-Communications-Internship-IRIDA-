@@ -21,8 +21,8 @@ from scipy.interpolate import interp1d
 
 # Dataset selection
 global DATAPATH_DTS, DATAPATH_DSTS
-DATAPATH_DTS = 'data/DTS/perr_dts_mu101_S1000000000'
-DATAPATH_DSTS = 'data/DSTS/perr_dsts_b302_mu101_S1000000000'
+DATAPATH_DTS = 'data/DTS/perr_dts_mu201_S1000000000'
+DATAPATH_DSTS = 'data/DSTS/perr_dsts_b402_mu201_S1000000000'
 
 #======================================================================================
 #                           ERROR PROBABILITY
@@ -404,15 +404,15 @@ def beta_optimal_data(N, sigmas:list) -> dict:
         
     return beta_opt_dict
 
-
-def beta_threshold_data(N:float, sigmas: list) -> tuple[dict, dict]:
+def beta_threshold_data(N: float, sigmas: list) -> dict:
     """
-    Finds the threshold β_th by extracting the contour and interpolating
-    it onto the fixed mus_grid.
+    Finds the threshold β_th by locating the zero crossing of
+    perr_dts - perr_dsts along the beta axis for each μ.
+
+    NaN values are ignored independently for each μ.
     """
 
     beta_th_dict = {}
-    mus_th_dict = {}
 
     for sigma in sigmas:
 
@@ -425,48 +425,52 @@ def beta_threshold_data(N:float, sigmas: list) -> tuple[dict, dict]:
         beta = data_dsts["beta_grid"]
         mus_grid = data_dsts["mus_grid"]
 
-        mus_surface, beta_surface = np.meshgrid(mus_grid, beta, indexing="ij")
-
+        # ---------- Construct difference surface ----------
         perr_surface_dts = np.repeat(perr_dts[:, None], len(beta), axis=1)
-
-        # ---------- Threshold contour ----------
         difference = perr_surface_dts - perr_dsts
 
-        contour = plt.contour(mus_surface, beta_surface, difference, levels=[0], alpha=0)
+        beta_th = np.full_like(mus_grid, np.nan, dtype=float)
+        min_mu = 1/(1+2*N)
 
-        paths = contour.get_paths()
+        # ---------- Find beta threshold ----------
+        for i, mu in enumerate(mus_grid):
+            if mu>=min_mu:
+                diff_mu = difference[i, :]
 
-        if len(paths) == 0:
-            beta_th_dict[f"sigma_{sigma}"] = np.full_like(mus_grid, np.nan)
-            mus_th_dict[f"sigma_{sigma}"] = mus_grid
-            continue
+                # Remove NaNs for this μ only
+                mask = np.isfinite(diff_mu)
 
-        verts = paths[0].vertices
+                if np.sum(mask) < 2:
+                    continue
 
-        mu_intersection = verts[:, 0]
-        beta_intersection = verts[:, 1]
+                diff_valid = diff_mu[mask]
+                beta_valid = beta[mask]
 
-        # Sort by μ
-        order = np.argsort(mu_intersection)
-        mu_intersection = mu_intersection[order]
-        beta_intersection = beta_intersection[order]
+                # Exact zero
+                zero_idx = np.where(diff_valid == 0)[0]
+                if len(zero_idx) > 0:
+                    beta_th[i] = beta_valid[zero_idx[0]]
+                    continue
 
-        # Remove duplicate μ values (interp1d requires increasing x)
-        mu_unique, idx = np.unique(mu_intersection, return_index=True)
-        beta_unique = beta_intersection[idx]
+                # Find sign changes
+                sign_change = np.where(np.diff(np.sign(diff_valid)) != 0)[0]
+                
+                if len(sign_change) == 0:
+                    continue
 
-        # Interpolate onto mus_grid
-        interp = interp1d(mu_unique, beta_unique, kind="linear", bounds_error=False, fill_value=np.nan)
+                # Choose which crossing you want
+                j = sign_change[1] if len(sign_change) > 1 else sign_change[0]
 
-        beta_th = interp(mus_grid)
+                b1, b2 = beta_valid[j], beta_valid[j + 1]
+                d1, d2 = diff_valid[j], diff_valid[j + 1]
+
+                # Linear interpolation
+                beta_th[i] = b1 + (0 - d1) * (b2 - b1) / (d2 - d1)
 
         beta_th_dict[f"sigma_{sigma}"] = beta_th
-        mus_th_dict[f"sigma_{sigma}"] = mus_grid
-
-        plt.clf()   # remove invisible contour
 
     return beta_th_dict
-        
+
 
 def plot_squeezing(N:float, sigmas:list, colors_opt:list, colors_th:list, opt:bool = False, th:bool = True) -> dict:
 
@@ -476,6 +480,7 @@ def plot_squeezing(N:float, sigmas:list, colors_opt:list, colors_th:list, opt:bo
 
     n_gh = 100
     gauss = hermgauss(n_gh)
+    min_mu = 1/(1 + 2*N)
     if opt or th:
         plt.figure(figsize=(15,6), dpi=300)
     #---------- FIND THRESHOLD ----------
@@ -505,9 +510,10 @@ def plot_squeezing(N:float, sigmas:list, colors_opt:list, colors_th:list, opt:bo
 
         #-------------------------  THRESHOLD  -------------------------
         # Find theoretical values for β_th
-        beta_th_theory = []
-        for m in mus_grid:
-            beta_th_theory.append(beta_threshold_theory(N, m, sigma, gauss))
+        beta_th_theory = np.full((len(mus_grid)), np.nan)
+        for idx_th, m in enumerate(mus_grid):
+            if m>=min_mu:
+                beta_th_theory[idx_th]=(beta_threshold_theory(N, m, sigma, gauss))
         beta_th_theory= np.array(beta_th_theory)
         
         #-------------------------  R^2  THRESHOLD -------------------------
@@ -524,9 +530,10 @@ def plot_squeezing(N:float, sigmas:list, colors_opt:list, colors_th:list, opt:bo
         # ------------- OPTIMAL ----------------------
 
         # Find theoretical values for β_opt
-        beta_opt_theory = np.zeros_like(mus_grid)
-        for idx, m in enumerate(mus_grid):
-            beta_opt_theory[idx] = beta_optimal_theory(N, m, sigma, gauss)
+        beta_opt_theory = np.full((len(mus_grid)), np.nan)
+        for idx_opt, m in enumerate(mus_grid):
+            if m>=min_mu:
+                beta_opt_theory[idx_opt] = beta_optimal_theory(N, m, sigma, gauss)
         
         #-------------------------  R^2 OPTIMAL  -------------------------
 
@@ -612,6 +619,7 @@ def sigma_threshold_data(N:float, sigmas:np.array, mus:np.array) -> np.array:
     return sigma_th_data
 
 def plot_sigma_threshold(N_vals:np.array, sigmas, mus_grid, colors_th, colors_points):
+
     sigma_thresholds = np.zeros((len(N_vals), len(mus_grid)))
     sigma_thresholds_data = np.zeros((len(N_vals), len(mus_grid)))
 
@@ -632,7 +640,7 @@ def plot_sigma_threshold(N_vals:np.array, sigmas, mus_grid, colors_th, colors_po
     plt.xlim(0.05, 1.01)
     
     plt.xlabel('μ')
-    plt.ylabel('σ')
+    plt.ylabel(r'$\sigma_{th}$')
     plt.legend(fontsize=5)
     plt.tight_layout()
     plt.show()
