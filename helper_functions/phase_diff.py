@@ -10,9 +10,19 @@ import plotly.graph_objects as go
 from helper_functions.state_measurement import *
 import random
 
+# CONTENTS:
+#==================================
+# ERROR PROBABILITY
+# BETA THRESHOLD & OPTIMAL SQUEEZING
+# HELSTROM
+
 global DATAPATH_CS, DATAPATH_DSS
 DATAPATH_CS = 'data/CS/perr_cs_a101_S1000000000'
 DATAPATH_DSS = 'data/DSS/perr_dss_N101_b101_S1000000000'
+
+#======================================================================================
+#                           ERROR PROBABILITY
+#======================================================================================
 
 def perr_cs(alpha_grid:np.array, sigma:float, num_samples:int, strawberry:bool=False) -> np.array:
     '''
@@ -263,6 +273,9 @@ def plot_homodyne_perr(sigmas:list, colors_light:list, colors_dark:list, cs:str|
     if cs or dss:
         fig.show()
 
+#======================================================================================
+#                        BETA THRESHOLD & OPTIMAL SQUEEZING
+#======================================================================================
 
 def beta_threshold_theory(N:float, sigma:float, gauss:tuple) -> float:
     '''
@@ -295,7 +308,7 @@ def beta_threshold_theory(N:float, sigma:float, gauss:tuple) -> float:
         return 0.0
 
 
-def beta_opt_theory(N:float, sigma:float, gauss:tuple) -> float:
+def beta_optimal_theory(N:float, sigma:float, gauss:tuple) -> float:
     '''
     Utilized an optimization method to find the value of β in [0,1] which minimizes the homodyne error probability;
     thus, the optimal value of β.
@@ -310,7 +323,112 @@ def beta_opt_theory(N:float, sigma:float, gauss:tuple) -> float:
     return res.x
 
 
-def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = False, th:bool = True) -> dict:
+def beta_optimal_data(sigmas:list) -> dict:
+
+    '''
+    Plots the threshold and optimal value of the squeezing fraction β as a function of the average photon number for different sigmas.
+    '''
+    #---------- FIND THRESHOLD ----------
+    beta_opt_dict = {}
+
+    for i,sigma in enumerate(sigmas):
+
+        # ------------- LOAD DATA ----------------------
+               
+        data_cs = np.load(f"{DATAPATH_CS}_sigma{sigma}.npz")
+        perr_cs =  data_cs["p_err_cs"]
+
+        data_dss = np.load(f"{DATAPATH_DSS}_sigma{sigma}.npz")
+        perr_dss =  data_dss["p_err_dss"]
+        beta = data_dss["beta"]
+        N_grid = data_dss["N"]
+    
+        mus_surface, beta_surface = np.meshgrid(N_grid, beta, indexing="ij")
+        perr_surface_cs = np.zeros_like(mus_surface)
+
+        for k in range(len(N_grid)):
+            for l in range(len(beta)):
+
+                perr_surface_cs [k, l] = perr_cs[k]
+        
+        # ------------- OPTIMAL ----------------------
+
+        # Minima along beta for each N
+        valid_rows = ~np.all(np.isnan(perr_dss), axis=1)
+        beta_opt = np.full(len(N_grid), np.nan)
+        idx = np.nanargmin(perr_dss[valid_rows], axis=1)
+        beta_opt[valid_rows] = beta[idx]
+        beta_opt_dict[f'sigma_{sigma}'] = beta_opt
+        
+    return beta_opt_dict
+
+def beta_threshold_data(sigmas: list) -> dict:
+    """
+    Finds the threshold β_th by locating the zero crossing of
+    perr_dts - perr_dsts along the beta axis for each μ.
+
+    NaN values are ignored independently for each μ.
+    """
+
+    beta_th_dict = {}
+
+    for sigma in sigmas:
+
+        # ---------- Load data ----------
+        data_cs = np.load(f"{DATAPATH_CS}_sigma{sigma}.npz")
+        perr_cs =  data_cs["p_err_cs"]
+
+        data_dss = np.load(f"{DATAPATH_DSS}_sigma{sigma}.npz")
+        perr_dss =  data_dss["p_err_dss"]
+        beta = data_dss["beta"]
+        N_grid = data_dss["N"]
+
+        # ---------- Construct difference surface ----------
+        perr_surface_dts = np.repeat(perr_cs[:, None], len(beta), axis=1)
+        difference = perr_surface_dts - perr_dss
+
+        beta_th = np.full_like(N_grid, np.nan, dtype=float)
+
+        # ---------- Find beta threshold ----------
+        for i, n in enumerate(N_grid):
+                diff_N = difference[i, :]
+
+                # Remove NaNs for this μ only
+                mask = np.isfinite(diff_N)
+
+                if np.sum(mask) < 2:
+                    continue
+
+                diff_valid = diff_N[mask]
+                beta_valid = beta[mask]
+
+                # Exact zero
+                zero_idx = np.where(diff_valid == 0)[0]
+                if len(zero_idx) > 0:
+                    beta_th[i] = beta_valid[zero_idx[0]]
+                    continue
+
+                # Find sign changes
+                sign_change = np.where(np.diff(np.sign(diff_valid)) != 0)[0]
+                
+                if len(sign_change) == 0:
+                    continue
+
+                # Choose which crossing you want
+                j = sign_change[1] if len(sign_change) > 1 else sign_change[0]
+
+                b1, b2 = beta_valid[j], beta_valid[j + 1]
+                d1, d2 = diff_valid[j], diff_valid[j + 1]
+
+                # Linear interpolation
+                beta_th[i] = b1 + (0 - d1) * (b2 - b1) / (d2 - d1)
+
+        beta_th_dict[f"sigma_{sigma}"] = beta_th
+
+    return beta_th_dict
+
+
+def plot_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = False, th:bool = True) -> dict:
 
     '''
     Plots the threshold and optimal value of the squeezing fraction β as a function of the average photon number for different sigmas.
@@ -322,7 +440,8 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
     plt.figure(figsize=(15,6), dpi=300)
 
     #---------- FIND THRESHOLD ----------
-    beta_opt_dict = {}
+    beta_opt_dict = beta_optimal_data(sigmas)
+    beta_th_dict = beta_threshold_data(sigmas)
 
     for i,sigma in enumerate(sigmas):
 
@@ -345,73 +464,63 @@ def optimal_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = F
 
 
         #-------------------------  THRESHOLD  -------------------------
-        
-        # Find intersection points from two surfaces
-        difference = perr_surface_cs - perr_dss
-        
-        cs = plt.contour(N_surface, beta_surface, difference, levels=[0], alpha=0)
-        path = cs.get_paths()[0]
-        verts = path.vertices
-
-        # sort intersection points and filter out the initial noisy points
-        N_intersection = verts[:,0]
-        beta_intersection = verts[:,1]
-        N_intersection, beta_intersection = zip(*sorted(zip(N_intersection, beta_intersection)))
-        N_intersection = np.array(N_intersection)
-        beta_intersection = np.array(beta_intersection)
-        mask = (N_intersection > 0.06) & (beta_intersection > 0.01)
-        
         # Find theoretical values for β_th
-        beta_th = []
-        for n in N_intersection:
-            beta_th.append(beta_threshold_theory(n, sigma, gauss))
-        beta_th= np.array(beta_th)
+        beta_th_theory = []
+        for n in N:
+            beta_th_theory.append(beta_threshold_theory(n, sigma, gauss))
+        beta_th_theory= np.array(beta_th_theory)
 
         #-------------------------  R^2  THRESHOLD -------------------------
-        ss_res_th = np.sum((beta_intersection[mask] - beta_th[mask])**2)
-        ss_tot_th = np.sum((beta_intersection[mask] - np.mean(beta_intersection[mask]))**2)
+        beta_th_data = beta_th_dict[f'sigma_{sigma}']
+        mask_NANS = np.isfinite(beta_th_theory) & np.isfinite(beta_th_data)
+
+        th_theory = beta_th_theory[mask_NANS]
+        th_data = beta_th_dict[f'sigma_{sigma}'][mask_NANS]
+    
+        ss_res_th = np.sum((th_data[1:] - th_theory[1:])**2)
+        ss_tot_th = np.sum((th_data[1:] - np.mean(th_data[1:]))**2)
         R2_th = 1 - ss_res_th/ss_tot_th
 
         # ------------- OPTIMAL ----------------------
-
-        # Minima along beta for each N
-        idx = np.argmin(perr_dss, axis=1)   
-        beta_opt = beta[idx]
-        beta_opt_theoretical = np.zeros_like(N)
+        beta_opt_theory = np.zeros_like(N)
 
         for idx, n in enumerate(N):
-            beta_opt_theoretical[idx] = beta_opt_theory(n, sigma, gauss)
-        beta_opt_dict[f'sigma_{sigma}'] = beta_opt
+            beta_opt_theory[idx] = beta_optimal_theory(n, sigma, gauss)
 
         #-------------------------  R^2 OPTIMAL  -------------------------
-        ss_res_opt = np.sum((beta_opt[1:] - beta_opt_theoretical[1:])**2)
-        ss_tot_opt = np.sum((beta_opt[1:] - np.mean(beta_opt[1:]))**2)
+        mask_NANS = np.isfinite(beta_opt_theory) & np.isfinite(beta_opt_dict[f'sigma_{sigma}'])
+
+        opt_theory = beta_opt_theory[mask_NANS]
+        opt_data = beta_opt_dict[f'sigma_{sigma}'][mask_NANS]
+        beta_opt = beta_opt_dict[f'sigma_{sigma}']
+        ss_res_opt = np.sum((opt_data[1:] - opt_theory[1:])**2)
+        ss_tot_opt = np.sum((opt_data[1:] - np.mean(opt_data[1:]))**2)
         R2_opt = 1 - ss_res_opt/ss_tot_opt
 
 
         if th:
             
-            plt.scatter(N_intersection[mask], beta_intersection[mask], s=30, edgecolors='k', color=colors_th[i], marker='D', zorder=10, 
+            plt.scatter(N[1:], beta_th_data[1:], s=30, edgecolors='k', color=colors_th[i], marker='D', zorder=10, 
                         label = fr'$\beta_{{\rm th}}$: σ = {sigma}, $R^2$ = {R2_th:0.3f}')
-            plt.fill_between(N_intersection[mask], beta_th[mask], 0, alpha=0.8, zorder=0, color=colors_th[i])
-            plt.plot(N_intersection, beta_th, color='k', linewidth = 3)
+            plt.fill_between(N, beta_th_theory, 0, alpha=0.8, zorder=0, color=colors_th[i])
+            plt.plot(N, beta_th_theory, color='k', linewidth = 3)
 
         if opt:
+            
             plt.scatter(N[1:], beta_opt[1:], color=colors_opt[i], edgecolors='k', s=50, marker='H', zorder=10, 
                         label = fr'$\beta_{{\rm opt}}$: σ = {sigma}, $R^2$ = {R2_opt:0.3f}')
-            plt.plot(N[1:], beta_opt_theoretical[1:], color='k', linewidth = 3)
-        
-        plt.xlabel(r'$N$ (Average number of photons)')
-        plt.ylabel(r'$\beta$ (Squeezing Fraction)')
+            plt.plot(N[1:], beta_opt_theory[1:], color='k', linewidth = 3)
 
         if th or opt:
             plt.legend()
+            plt.tight_layout()
+            plt.xlabel(r'$N$ (Average number of photons)')
+            plt.ylabel(r'$\beta$ (Squeezing Fraction)')
+            plt.ylim(0,1)
 
-        plt.tight_layout()
-    plt.show()
+        if (not th) and (not opt):
+            plt.clf()
         
-
-    return beta_opt_dict
 
 
 def optimal_squeezing_noisefree(opt:bool = True, th:bool = True) -> None:
@@ -419,9 +528,6 @@ def optimal_squeezing_noisefree(opt:bool = True, th:bool = True) -> None:
     '''
     Plots the threshold and optimal value of the squeezing fraction β as a function of the average photon number for the noisefree case.
     '''
-
-    n_gh = 100
-    gauss = hermgauss(n_gh)
 
     plt.figure(figsize=(15,6), dpi=300)
 
@@ -433,8 +539,6 @@ def optimal_squeezing_noisefree(opt:bool = True, th:bool = True) -> None:
     data_dss = np.load(f"{DATAPATH_DSS}_sigma0.0.npz")
     N =  data_dss["N"]
     beta =  data_dss["beta"]
-    perr_dss = data_dss["p_err_dss"]
-    N_surface, beta_surface = np.meshgrid(N, beta, indexing="ij")
 
     beta_cs = np.linspace(0, 1, len(N))
     N_surface_cs, beta_surface_cs = np.meshgrid(N, beta_cs, indexing="ij")
@@ -445,105 +549,123 @@ def optimal_squeezing_noisefree(opt:bool = True, th:bool = True) -> None:
 
             perr_surface_cs [k, l] = perr_cs[k]
 
-    # Find intersection points
-    difference = perr_surface_cs - perr_dss
-        
-    cs = plt.contour(N_surface_cs, beta_surface_cs, difference, levels=[0], alpha=0)
-    path = cs.get_paths()[0]
-    verts = path.vertices
-
-    N_intersection = verts[:,0]
-    beta_intersection = verts[:,1]
-    N_intersection, beta_intersection = zip(*sorted(zip(N_intersection, beta_intersection)))
-    N_intersection = np.array(N_intersection)
-    beta_intersection = np.array(beta_intersection)
-    mask = (N_intersection > 0.01) & (beta_intersection > 0.01)
-
-        
     # ------------- THRESHOLD ----------------------
-    beta_th = 4*N_intersection/(4*N_intersection + 1)
 
+    beta_th_data = beta_threshold_data([0.0])['sigma_0.0']
+    beta_th_theory = 4*N/(4*N + 1)
 
     #-------------------------  R^2 THRESHOLD  -------------------------
-    ss_res_th = np.sum((beta_intersection[mask] - beta_th[mask])**2)
-    ss_tot_th = np.sum((beta_intersection[mask] - np.mean(beta_intersection[mask]))**2)
+
+    ss_res_th = np.sum((beta_th_data - beta_th_theory)**2)
+    ss_tot_th = np.sum((beta_th_data - np.mean(beta_th_data))**2)
     R2_th = 1 - ss_res_th/ss_tot_th
 
-
     # ------------- OPTIMAL ----------------------
-    # Minima along beta for each N
-    idx = np.argmin(perr_dss, axis=1)   
-    beta_opt = beta[idx]
+    
+    beta_opt_data = beta_optimal_data([0.0])['sigma_0.0']
     beta_opt_line =  N/(2*N + 1)
 
     #-------------------------  R^2 OPTIMAL  -------------------------
-    ss_res_opt = np.sum((beta_opt - beta_opt_line)**2)
-    ss_tot_opt = np.sum((beta_opt - np.mean(beta_opt))**2)
+    ss_res_opt = np.sum((beta_opt_data - beta_opt_line)**2)
+    ss_tot_opt = np.sum((beta_opt_data - np.mean(beta_opt_data))**2)
     R2_opt = 1 - ss_res_opt/ss_tot_opt
 
     if th:
-            
-        plt.scatter(N_intersection[mask], beta_intersection[mask], s=30, edgecolors='k', color='white', marker='D', zorder=10, 
+        plt.scatter(N, beta_th_data, s=30, edgecolors='k', color='white', marker='D', zorder=10, 
                     label = fr'$\beta_{{\rm th}}$: $R^2$ = {R2_th:0.3f}')
-        plt.fill_between(N_intersection[mask], beta_th[mask], 0, alpha=0.8, zorder=0, color='blue')
-        plt.plot(N_intersection, beta_th, color='k', linewidth = 3)
+        plt.fill_between(N, beta_th_theory, 0, alpha=0.8, zorder=0, color='blue')
+        plt.plot(N, beta_th_theory, color='k', linewidth = 3)
 
     if opt:
-        plt.scatter(N[1:], beta_opt[1:], color='red', edgecolors='k', s=50, marker='o', zorder=10, 
+        plt.scatter(N[1:], beta_opt_data[1:], color='red', edgecolors='k', s=50, marker='o', zorder=10, 
                     label = fr'$\beta_{{\rm opt}}$: $R^2$ = {R2_opt:0.3f}')
         plt.plot(N[1:], beta_opt_line[1:], color='k', linewidth = 3)
 
         if not th:
              plt.legend()
-        
-    plt.xlabel(r'$N$ (Average number of photons)')
-    plt.ylabel(r'$\beta$ (Squeezing Fraction)')
+
     if th:
         plt.legend()
+        plt.xlabel(r'$N$ (Average number of photons)')
+        plt.ylabel(r'$\beta$ (Squeezing Fraction)')
+        plt.tight_layout()
 
-    plt.tight_layout()
-    plt.show()
+    if (not th) and (not opt):
+        plt.clf()
+        
 
 
-def beta_threshold_vs_sigma(N_values:np.array, sigmas:np.array):
+def beta_threshold_vs_sigma(N_values: np.ndarray, sigmas: np.ndarray, colors_1, colors_2):
 
     n_gh = 100
     gauss = hermgauss(n_gh)
 
-    plt.figure(figsize=(5,5))
+    # Compute threshold data once
+    beta_th_data_dict = beta_threshold_data(sigmas)
 
-    for N in N_values:
+    # Load N grid once
+    data = np.load(f"{DATAPATH_DSS}_sigma{sigmas[0]}.npz")
+    N_grid = data["N"]
 
-        beta_th_values = []
+    plt.figure(figsize=(6, 5), dpi=300)
+
+    for i, N in enumerate(N_values):
+
+        # Find corresponding index in the data
+        idx = np.argmin(np.abs(N_grid - N))
+
+        beta_th_theory = []
+        beta_th_data = []
 
         for sigma in sigmas:
 
+            # Theory
             beta_th = beta_threshold_theory(N, sigma, gauss)
-
             if np.isnan(beta_th):
-                beta_th = 0
+                beta_th = 0.0
+            beta_th_theory.append(beta_th)
 
-            beta_th_values.append(beta_th)
+            # Data
+            beta_th_data.append(beta_th_data_dict[f"sigma_{sigma}"][idx])
 
-        plt.plot(sigmas, beta_th_values, label=f"N={N}", linewidth=3)
-        plt.fill_between(sigmas, beta_th_values, 0, alpha=0.3)
+        beta_th_theory = np.array(beta_th_theory)
+        beta_th_data = np.array(beta_th_data)
+
+        # R²
+        mask = np.isfinite(beta_th_data)
+        ss_res = np.sum((beta_th_data[mask] - beta_th_theory[mask])**2)
+        ss_tot = np.sum((beta_th_data[mask] - np.mean(beta_th_data[mask]))**2)
+        R2 = 1 - ss_res/ss_tot if ss_tot > 0 else np.nan
+
+        # Plot
+        plt.fill_between(sigmas, beta_th_theory, 0, color =colors_1[i], alpha=0.30)
+        plt.plot(sigmas, beta_th_theory, color =colors_1[i], linewidth=2)
+        plt.scatter(sigmas, beta_th_data, color =colors_2[i], marker='D', s=20, edgecolors='k', zorder=10, label=fr"$N={N}$, $R^2={R2:.3f}$")
 
     plt.ylim(-0.01, 1.01)
-    plt.xlim(-0.01, 1.01)
+    plt.xlim(sigmas[0], sigmas[-1])
     plt.xlabel(r"$\sigma$")
-    plt.ylabel(r"$\beta_{\mathrm{threshold}}$")
+    plt.ylabel(r"$\beta_{\rm th}$")
     plt.legend()
     plt.tight_layout()
     plt.show()
 
+#======================================================================================
+#                                   HELSTROM
+#======================================================================================
 
-def helstrom_bound(N:float, beta_opt_dict:dict, sigmas:np.array, fock_cutoff:int):
+
+def helstrom_bound(N:float, sigmas:np.array, fock_cutoff:int, cs = False):
 
     N_grid = np.linspace(0, 2, 81)
+    n_gh = 100
+    gauss = hermgauss(n_gh)
+    x, w = gauss
 
-    if beta_opt_dict == 0:
+    if cs:
         beta_opt_array = np.zeros((len(sigmas)))
     else:
+        beta_opt_dict = beta_optimal_data(sigmas)
         beta_opt_array = np.zeros((len(sigmas)))
 
         for i,sigma in enumerate(sigmas):
@@ -567,9 +689,7 @@ def helstrom_bound(N:float, beta_opt_dict:dict, sigmas:np.array, fock_cutoff:int
         result = eng.run(prog)
         return result.state.dm()
     
-    n_gh = 100
-    gauss = hermgauss(n_gh)
-    x, w = gauss
+
     p_helstrom = np.zeros((len(sigmas)))
 
     for j,sigma in enumerate(sigmas):
@@ -590,12 +710,12 @@ def helstrom_bound(N:float, beta_opt_dict:dict, sigmas:np.array, fock_cutoff:int
     
     return p_helstrom
 
-def perr_vs_sigma(N:float, beta_opt_dict, sigmas:np.array, cs:bool):
+
+def perr_vs_sigma(N:float, sigmas:np.array, cs:bool):
 
     N_grid = np.linspace(0, 2, 101)
     p = np.zeros((len(sigmas)))
     beta_opt_array = np.zeros((len(sigmas)))
-
     n_gh = 100
     x, w = hermgauss(n_gh)
 
@@ -604,7 +724,7 @@ def perr_vs_sigma(N:float, beta_opt_dict, sigmas:np.array, cs:bool):
         
             p[i] = theory_point_cs(N=N, sigma = sigma, gauss = (x, w))
     else:
-
+        beta_opt_dict = beta_optimal_data(sigmas)
         for i, sigma in enumerate(sigmas):
         
             beta_opt_array[i] = beta_opt_dict[f"sigma_{sigma}"][np.where(N_grid == N)[0][0]]
@@ -612,25 +732,39 @@ def perr_vs_sigma(N:float, beta_opt_dict, sigmas:np.array, cs:bool):
 
     return p
 
-def plot_helstrom_vs_homodyne(sigma:list, p_helstrom:tuple, p_homodyne:tuple):
+
+def plot_helstrom_vs_homodyne(N:float, sigma:list, p_helstrom:tuple, p_homodyne:tuple):
 
     p_helstrom_cs, p_helstrom_dss = p_helstrom
     p_cs_hd, p_dss_hd = p_homodyne
     
-    fig, ax = plt.subplots(1, 2, figsize=(10,5))
-
+    fig, ax = plt.subplots(1, 2, figsize=(10,5), dpi=100)
+    fig.suptitle(rf'$N={N}$', fontsize=16)
     ax[0].set_title('DSS')
-    ax[0].plot(sigma, p_helstrom_dss, linestyle='--', marker='o', markersize=4, color='k', label='Helstrom')
-    ax[0].plot(sigma, p_dss_hd, linestyle='--', marker='o', markersize=4, color='r', label='Homodyne')
+    ax[0].plot(sigma, p_helstrom_dss, linestyle='-', color='k', label='Helstrom')
+    ax[0].plot(sigma, p_dss_hd, linestyle='-', color='b', label='Homodyne')
     ax[0].set_yscale('log')
 
     ax[1].set_title('CS')
-    ax[1].plot(sigma, p_helstrom_cs, linestyle='--', marker='o', markersize=4, color='k', label='Helstrom')
-    ax[1].plot(sigma, p_cs_hd, linestyle='--', marker='o', markersize=4, color='b', label='Homodyne')
+    ax[1].plot(sigma, p_helstrom_cs, linestyle='-', color='k', label='Helstrom')
+    ax[1].plot(sigma, p_cs_hd, linestyle='-', color='b', label='Homodyne')
     ax[1].set_yscale('log')
 
     for axis in ax:
         axis.set_ylim(min(p_helstrom_dss)/2, 2*max(p_helstrom_dss))
         axis.legend()
+        axis.set_xlabel(r'$\sigma$')
+        axis.set_ylabel(r'$P_{err}$')
+    plt.tight_layout
+    plt.show()
 
+
+    fig, ax = plt.subplots(1, 1, figsize=(10,5), dpi=100)
+    fig.suptitle(rf'$N={N}$', fontsize=16)
+    ax.plot(sigma, p_helstrom_dss-p_helstrom_cs, linestyle='-', color='k', label='Helstrom')
+    ax.plot(sigma, p_dss_hd-p_cs_hd, linestyle='-', color='b', label='Homodyne') 
+    ax.legend()
+    ax.set_xlabel(r'$\sigma$')
+    ax.set_ylabel(r'$P^{(DSTS)}_{err}-P^{(DTS)}_{err}$')
+    plt.tight_layout
     plt.show()
