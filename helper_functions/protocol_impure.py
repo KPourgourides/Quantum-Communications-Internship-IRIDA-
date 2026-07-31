@@ -727,11 +727,24 @@ def plot_helstrom_vs_homodyne(p_helstrom, p_hd, N, sigma, mus_grid):
     p_helstrom_dsts, p_helstrom_dts = p_helstrom
     p_dsts_hd, p_dts_hd = p_hd
 
+    # Find sigma threshold
     sigma_th = sigma_threshold_theory(N, mus_grid)
-    th=1e-2
+    th=1e-3
     idx = np.where((sigma_th > sigma - th) & (sigma_th < sigma + th))[0]
-    mu_th = (mus_grid[idx[-1]]+mus_grid[idx[0]])/2
-    #--------------------------------  PLOT --------------------------------
+    try:
+        mu_th = (mus_grid[idx[0]]+mus_grid[idx[-1]])/2
+    except:
+        mu_th = 1
+
+    # Find the three regions
+    difference_hd = p_dsts_hd - p_dts_hd
+  
+    idx_pos = np.where(difference_hd>0)[0]
+    idx_neg = np.where(difference_hd<0)[0]
+    if len(idx_pos) == 0:
+        idx_zero = idx_neg
+
+    #-------------------------------- PLOT --------------------------------
 
     fig, ax = plt.subplots(1, 2, figsize=(10,5))
     fig.suptitle(rf'$N={N}$, $\sigma={sigma}$', fontsize=16)
@@ -753,15 +766,28 @@ def plot_helstrom_vs_homodyne(p_helstrom, p_hd, N, sigma, mus_grid):
         axis.set_xlabel(r'$\mu$')
     plt.show()
 
-    mu_th_c = "#AD0B90"
-    fig, ax = plt.subplots(1, 1, figsize=(13,5), dpi=200)
+    #-------------------------------- PLOT --------------------------------
+    
+    fig, ax = plt.subplots(2, 1, figsize=(10,7), dpi=100)
+
     fig.suptitle(rf'$N={N}$, $\sigma={sigma}$', fontsize=16)
-    ax.plot(mus_grid, p_helstrom_dsts-p_helstrom_dts, linestyle='-', color='k', label='Helstrom')
-    ax.plot(mus_grid, p_dsts_hd-p_dts_hd, linestyle='-', color= 'b', label='Homodyne')
-    ax.set_ylabel(r'$P^{(DSTS)}_{err}-P^{(DTS)}_{err}$')
-    ax.set_xlabel(r'$\mu$')
-    ax.axvline(x=mu_th, color = mu_th_c, linestyle = '--', label = r'$\sigma_{th}$ is reached', alpha=0.30)
-    ax.axvspan(mu_th, mus_grid[-1], color=mu_th_c, alpha=0.10)
-    ax.legend()
-    ax.axhline(y=0, color='gray', linestyle='--', linewidth=1)
+
+    ax[0].plot(mus_grid, p_helstrom_dsts-p_helstrom_dts, linestyle='-', color='k', label='Helstrom')
+    ax[0].plot(mus_grid, p_dsts_hd-p_dts_hd, linestyle='-', color= 'b', label='Homodyne')
+    ax[0].axvline(x=mu_th, color = "#AD0B90", linestyle = '--', label = r'$\sigma_{th}$ is reached', alpha=0.30)
+    ax[0].axvspan(mus_grid[idx_neg[0]], mus_grid[idx_neg[-1]], color='blue', alpha=0.10, label = 'Squeezing beneficial')
+    ax[0].axvspan(mus_grid[idx_neg[-1]], mus_grid[idx_pos[-1]], color= "#AD0B90", alpha=0.10, label = 'Squeezing not beneficial')
+    ax[0].set_ylabel(r'$P^{(DSTS)}_{err}-P^{(DTS)}_{err}$')
+    ax[0].set_xlabel(r'$\mu$')
+    ax[0].legend()
+    ax[0].axhline(y=0, color='gray', linestyle='--', linewidth=1)
+
+    ax[1].plot(mus_grid, sigma_th, color='k', alpha=0.5 )
+    ax[1].fill_between(mus_grid[mus_grid <= mu_th], sigma_th[mus_grid <= mu_th], 0, color='blue', alpha=0.10)
+    ax[1].fill_between(mus_grid[mus_grid >= mu_th], sigma_th[mus_grid >= mu_th], 0, color="#AD0B90", alpha=0.10)
+    ax[1].set_xlabel('μ')
+    ax[1].set_ylabel(r'$\sigma_{th}$')
+    ax[1].axhline(y=sigma, color ='gray', linestyle = '--', alpha=0.5)
+    ax[1].axvline(x=mu_th, color = "#AD0B90", linestyle = '--', alpha=0.50)
+    plt.tight_layout()
     plt.show()
