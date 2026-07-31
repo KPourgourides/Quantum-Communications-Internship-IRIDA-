@@ -464,6 +464,7 @@ def plot_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = Fals
 
 
         #-------------------------  THRESHOLD  -------------------------
+
         # Find theoretical values for β_th
         beta_th_theory = []
         for n in N:
@@ -471,6 +472,7 @@ def plot_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = Fals
         beta_th_theory= np.array(beta_th_theory)
 
         #-------------------------  R^2  THRESHOLD -------------------------
+
         beta_th_data = beta_th_dict[f'sigma_{sigma}']
         mask_NANS = np.isfinite(beta_th_theory) & np.isfinite(beta_th_data)
 
@@ -657,7 +659,6 @@ def beta_threshold_vs_sigma(N_values: np.ndarray, sigmas: np.ndarray, colors_1, 
 
 def helstrom_bound(N:float, sigmas:np.array, fock_cutoff:int, cs = False):
 
-    N_grid = np.linspace(0, 2, 81)
     n_gh = 100
     gauss = hermgauss(n_gh)
     x, w = gauss
@@ -665,12 +666,9 @@ def helstrom_bound(N:float, sigmas:np.array, fock_cutoff:int, cs = False):
     if cs:
         beta_opt_array = np.zeros((len(sigmas)))
     else:
-        beta_opt_dict = beta_optimal_data(sigmas)
         beta_opt_array = np.zeros((len(sigmas)))
-
         for i,sigma in enumerate(sigmas):
-
-            beta_opt_array[i] = beta_opt_dict[f"sigma_{sigma}"][np.where(N_grid == N)[0][0]]
+            beta_opt_array[i] = beta_optimal_theory(N, sigma, gauss)
 
 
     alpha = np.sqrt(N*(1-beta_opt_array)) 
@@ -737,16 +735,18 @@ def plot_helstrom_vs_homodyne(N:float, sigma:list, p_helstrom:tuple, p_homodyne:
 
     p_helstrom_cs, p_helstrom_dss = p_helstrom
     p_cs_hd, p_dss_hd = p_homodyne
-    
+
+    #---------------- PLOT ------------
+
     fig, ax = plt.subplots(1, 2, figsize=(10,5), dpi=100)
     fig.suptitle(rf'$N={N}$', fontsize=16)
     ax[0].set_title('DSS')
-    ax[0].plot(sigma, p_helstrom_dss, linestyle='-', color='k', label='Helstrom')
+    ax[0].plot(sigma, p_helstrom_dss, linestyle='--', color='k', label='Helstrom')
     ax[0].plot(sigma, p_dss_hd, linestyle='-', color='b', label='Homodyne')
     ax[0].set_yscale('log')
 
     ax[1].set_title('CS')
-    ax[1].plot(sigma, p_helstrom_cs, linestyle='-', color='k', label='Helstrom')
+    ax[1].plot(sigma, p_helstrom_cs, linestyle='--', color='k', label='Helstrom')
     ax[1].plot(sigma, p_cs_hd, linestyle='-', color='b', label='Homodyne')
     ax[1].set_yscale('log')
 
@@ -758,13 +758,42 @@ def plot_helstrom_vs_homodyne(N:float, sigma:list, p_helstrom:tuple, p_homodyne:
     plt.tight_layout
     plt.show()
 
+    #---------------- PLOT ------------
+    # Find regions where squeezing is beneficial
+    difference_hd = p_dss_hd - p_cs_hd
+  
+    idx_pos = np.where(difference_hd>0)[0]
+    idx_neg = np.where(difference_hd<0)[0]
+    idx_zero = np.where(difference_hd==0)[0]
+    if len(idx_pos) == 0:
+        idx_pos = idx_neg
+    if len(idx_zero) == 0:
+            idx_zero = idx_neg
 
     fig, ax = plt.subplots(1, 1, figsize=(10,5), dpi=100)
     fig.suptitle(rf'$N={N}$', fontsize=16)
-    ax.plot(sigma, p_helstrom_dss-p_helstrom_cs, linestyle='-', color='k', label='Helstrom')
+    ax.plot(sigma, p_helstrom_dss-p_helstrom_cs, linestyle='--', color='k', label='Helstrom')
     ax.plot(sigma, p_dss_hd-p_cs_hd, linestyle='-', color='b', label='Homodyne') 
     ax.legend()
+    ax.axvspan(sigma[idx_neg[0]], sigma[idx_neg[-1]], color='blue', alpha=0.10, label = 'Squeezing beneficial')
+    ax.axvspan(sigma[idx_neg[-1]], sigma[idx_pos[-1]], color= "#AD0B90", alpha=0.10, label = 'Squeezing not beneficial')
+    ax.axvspan(sigma[idx_neg[-1]], sigma[idx_zero[-1]], color= "#AD0B90", alpha=0.10, label = 'Squeezing not beneficial')
     ax.set_xlabel(r'$\sigma$')
     ax.set_ylabel(r'$P^{(DSTS)}_{err}-P^{(DTS)}_{err}$')
+    plt.tight_layout
+    plt.show()
+
+    #---------------- PLOT ------------
+
+    fig, ax = plt.subplots(1, 1, figsize=(10,5), dpi=100)
+    fig.suptitle(rf'$N={N}$', fontsize=16)
+    ax.plot(sigma, abs(p_helstrom_dss-p_dss_hd), linestyle='-', color='k', label='DSS')
+    ax.plot(sigma, abs(p_helstrom_cs-p_cs_hd), linestyle='-', color='b', label='CS') 
+    ax.legend()
+    ax.axvspan(sigma[idx_neg[0]], sigma[idx_neg[-1]], color='blue', alpha=0.10, label = 'Squeezing beneficial')
+    ax.axvspan(sigma[idx_neg[-1]], sigma[idx_pos[-1]], color= "#AD0B90", alpha=0.10, label = 'Squeezing not beneficial')
+    ax.axvspan(sigma[idx_neg[-1]], sigma[idx_zero[-1]], color= "#AD0B90", alpha=0.10, label = 'Squeezing not beneficial')
+    ax.set_xlabel(r'$\sigma$')
+    ax.set_ylabel(r'|$P^{(min)}_{err}-P^{(HD)}_{err}$|')
     plt.tight_layout
     plt.show()

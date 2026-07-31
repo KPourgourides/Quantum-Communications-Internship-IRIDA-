@@ -656,16 +656,22 @@ def plot_sigma_threshold(N_vals:np.array, sigmas, mus_grid, colors_th, colors_po
 
 def helstrom_bound(N:float, mus_grid:np.array, sigma:float, fock_cutoff:int, dsts = True):
 
-    beta_opt_array = beta_optimal_data(N, [sigma])[f'sigma_{sigma}']
+    mu_min = 1/(1+2*N)
+    n_gh = 100
+    gauss = hermgauss(n_gh)
+    x, w = gauss
+
+    beta_opt_array = np.full_like(mus_grid, np.nan, dtype=float)
+    for i,mu in enumerate(mus_grid):
+        if mu>mu_min:
+            beta_opt_array[i] = beta_optimal_theory(N, mu, sigma, gauss)
 
     if not dsts:
         beta_opt_array = np.zeros((len(mus_grid)))
 
     r_opt = np.arcsinh(np.sqrt(N*beta_opt_array))
     alpha = np.full_like(mus_grid, np.nan, dtype=float)
-    mu_min = 1/(1+2*N)
     valid = mus_grid > mu_min
-
     alpha[valid] = np.sqrt(N*(1-beta_opt_array[valid])+(mus_grid[valid]-1)*(1+2*N*beta_opt_array[valid])/(2*mus_grid[valid]))
     
     def state(alpha, r, mu, phi):
@@ -681,9 +687,6 @@ def helstrom_bound(N:float, mus_grid:np.array, sigma:float, fock_cutoff:int, dst
         result = eng.run(prog)
         return result.state.dm()
 
-    n_gh = 100
-    gauss = hermgauss(n_gh)
-    x, w = gauss
     p_helstrom = np.full_like(mus_grid, np.nan, dtype=float)
     phis = np.sqrt(2)*sigma*x
 
@@ -736,13 +739,13 @@ def plot_helstrom_vs_homodyne(p_helstrom, p_hd, N, sigma, mus_grid):
     except:
         mu_th = 1
 
-    # Find the three regions
+    # Find regions where squeezing is beneficial
     difference_hd = p_dsts_hd - p_dts_hd
   
     idx_pos = np.where(difference_hd>0)[0]
     idx_neg = np.where(difference_hd<0)[0]
     if len(idx_pos) == 0:
-        idx_zero = idx_neg
+        idx_pos = idx_neg
 
     #-------------------------------- PLOT --------------------------------
 
@@ -750,13 +753,13 @@ def plot_helstrom_vs_homodyne(p_helstrom, p_hd, N, sigma, mus_grid):
     fig.suptitle(rf'$N={N}$, $\sigma={sigma}$', fontsize=16)
 
     ax[0].set_title('DSTS')
-    ax[0].plot(mus_grid, p_helstrom_dsts, linestyle='-', color='k', label='Helstrom')
+    ax[0].plot(mus_grid, p_helstrom_dsts, linestyle='--', color='k', label='Helstrom')
     ax[0].plot(mus_grid, p_dsts_hd, linestyle='-', color='b', label='Homodyne')
     ax[0].set_yscale('log')
     ax[0].set_ylabel(r'$P_{err}$')
 
     ax[1].set_title(rf'DTS')
-    ax[1].plot(mus_grid, p_helstrom_dts, linestyle='-', color='k', label='Helstrom')
+    ax[1].plot(mus_grid, p_helstrom_dts, linestyle='--', color='k', label='Helstrom')
     ax[1].plot(mus_grid, p_dts_hd, linestyle='-', color='b', label='Homodyne')
     ax[1].set_yscale('log')
 
@@ -772,7 +775,7 @@ def plot_helstrom_vs_homodyne(p_helstrom, p_hd, N, sigma, mus_grid):
 
     fig.suptitle(rf'$N={N}$, $\sigma={sigma}$', fontsize=16)
 
-    ax[0].plot(mus_grid, p_helstrom_dsts-p_helstrom_dts, linestyle='-', color='k', label='Helstrom')
+    ax[0].plot(mus_grid, p_helstrom_dsts-p_helstrom_dts, linestyle='--', color='k', label='Helstrom')
     ax[0].plot(mus_grid, p_dsts_hd-p_dts_hd, linestyle='-', color= 'b', label='Homodyne')
     ax[0].axvline(x=mu_th, color = "#AD0B90", linestyle = '--', label = r'$\sigma_{th}$ is reached', alpha=0.30)
     ax[0].axvspan(mus_grid[idx_neg[0]], mus_grid[idx_neg[-1]], color='blue', alpha=0.10, label = 'Squeezing beneficial')
@@ -789,5 +792,22 @@ def plot_helstrom_vs_homodyne(p_helstrom, p_hd, N, sigma, mus_grid):
     ax[1].set_ylabel(r'$\sigma_{th}$')
     ax[1].axhline(y=sigma, color ='gray', linestyle = '--', alpha=0.5)
     ax[1].axvline(x=mu_th, color = "#AD0B90", linestyle = '--', alpha=0.50)
+    plt.tight_layout()
+    plt.show()
+
+    #-------------------------------- PLOT --------------------------------
+
+    fig, ax = plt.subplots(1, 1, figsize=(10,7), dpi=100)
+
+    fig.suptitle(rf'$N={N}$, $\sigma={sigma}$', fontsize=16)
+
+    ax.plot(mus_grid, abs(p_dsts_hd-p_helstrom_dsts), linestyle='-', color='k', label='DSTS')
+    ax.plot(mus_grid, abs(p_dts_hd-p_helstrom_dts), linestyle='-', color= 'b', label='DTS')
+    ax.axvline(x=mu_th, color = "#AD0B90", linestyle = '--', label = r'$\sigma_{th}$ is reached', alpha=0.30)
+    ax.axvspan(mus_grid[idx_neg[0]], mus_grid[idx_neg[-1]], color='blue', alpha=0.10, label = 'Squeezing beneficial')
+    ax.axvspan(mus_grid[idx_neg[-1]], mus_grid[idx_pos[-1]], color= "#AD0B90", alpha=0.10, label = 'Squeezing not beneficial')
+    ax.set_ylabel(r'|$P^{(min)}_{err}-P^{(HD)}_{err}$|')
+    ax.set_xlabel(r'$\mu$')
+    ax.legend()
     plt.tight_layout()
     plt.show()
