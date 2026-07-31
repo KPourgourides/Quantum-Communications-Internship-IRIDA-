@@ -21,8 +21,8 @@ from scipy.interpolate import interp1d
 
 # Dataset selection
 global DATAPATH_DTS, DATAPATH_DSTS
-DATAPATH_DTS = 'data/DTS/perr_dts_mu201_S1000000000'
-DATAPATH_DSTS = 'data/DSTS/perr_dsts_b402_mu201_S1000000000'
+DATAPATH_DTS = 'data/DTS/perr_dts_mu401_S1000000000'
+DATAPATH_DSTS = 'data/DSTS/perr_dsts_b402_mu401_S1000000000'
 
 #======================================================================================
 #                           ERROR PROBABILITY
@@ -732,7 +732,7 @@ def plot_helstrom_vs_homodyne(p_helstrom, p_hd, N, sigma, mus_grid):
 
     # Find sigma threshold
     sigma_th = sigma_threshold_theory(N, mus_grid)
-    th=1e-3
+    th=1e-2
     idx = np.where((sigma_th > sigma - th) & (sigma_th < sigma + th))[0]
     try:
         mu_th = (mus_grid[idx[0]]+mus_grid[idx[-1]])/2
@@ -783,15 +783,15 @@ def plot_helstrom_vs_homodyne(p_helstrom, p_hd, N, sigma, mus_grid):
     ax[0].set_ylabel(r'$P^{(DSTS)}_{err}-P^{(DTS)}_{err}$')
     ax[0].set_xlabel(r'$\mu$')
     ax[0].legend()
+    
     ax[0].axhline(y=0, color='gray', linestyle='--', linewidth=1)
 
     ax[1].plot(mus_grid, sigma_th, color='k', alpha=0.5 )
-    ax[1].fill_between(mus_grid[mus_grid <= mu_th], sigma_th[mus_grid <= mu_th], 0, color='blue', alpha=0.10)
-    ax[1].fill_between(mus_grid[mus_grid >= mu_th], sigma_th[mus_grid >= mu_th], 0, color="#AD0B90", alpha=0.10)
+    ax[1].fill_between(mus_grid[mus_grid <= mu_th], sigma_th[mus_grid < mu_th], 0, color='blue', alpha=0.10)
+    ax[1].fill_between(mus_grid[mus_grid >= mu_th], sigma_th[mus_grid > mu_th], 0, color="#AD0B90", alpha=0.10)
     ax[1].set_xlabel('μ')
     ax[1].set_ylabel(r'$\sigma_{th}$')
-    ax[1].axhline(y=sigma, color ='gray', linestyle = '--', alpha=0.5)
-    ax[1].axvline(x=mu_th, color = "#AD0B90", linestyle = '--', alpha=0.50)
+    ax[1].axvline(x=mu_th, color = "#AD0B90", linestyle = '--', alpha=0.30)
     plt.tight_layout()
     plt.show()
 

@@ -38,7 +38,6 @@ def perr_cs(alpha_grid:np.array, sigma:float, num_samples:int, strawberry:bool=F
 
         for i, N in enumerate(alpha_grid**2):
 
-            print(f"\rProgress: {i+1}/{len(alpha_grid)}", end="", flush=True)
 
             p = theory_point_cs(N, sigma, gauss)
             p_err[i] = np.random.binomial(num_samples, p) / num_samples
@@ -91,8 +90,6 @@ def perr_dss(N_grid:np.array, beta_grid:np.array, sigma:float, num_samples:int, 
 
         for i, N in enumerate(N_grid):
 
-            print(f"\rProgress: {i+1}/{len(N_grid)}", end="", flush=True)
-
             for k, beta in enumerate(beta_grid):
                 p = theory_point_dss(N, beta, sigma, gauss)
                 p_err[i, k] = np.random.binomial(num_samples, p) / num_samples
@@ -105,7 +102,6 @@ def perr_dss(N_grid:np.array, beta_grid:np.array, sigma:float, num_samples:int, 
 
             alphas = np.sqrt(N*(1-beta_grid)) 
 
-            print(f"\rProgress: {i+1}/{len(N_grid)}", end="", flush=True)
 
             for k, beta in enumerate(beta_grid):
 
@@ -715,18 +711,18 @@ def perr_vs_sigma(N:float, sigmas:np.array, cs:bool):
     p = np.zeros((len(sigmas)))
     beta_opt_array = np.zeros((len(sigmas)))
     n_gh = 100
-    x, w = hermgauss(n_gh)
+    gauss = hermgauss(n_gh)
+    x, w = gauss
 
     if cs:
         for i, sigma in enumerate(sigmas):
         
             p[i] = theory_point_cs(N=N, sigma = sigma, gauss = (x, w))
     else:
-        beta_opt_dict = beta_optimal_data(sigmas)
+        beta_opt_array = np.zeros((len(sigmas)))
         for i, sigma in enumerate(sigmas):
-        
-            beta_opt_array[i] = beta_opt_dict[f"sigma_{sigma}"][np.where(N_grid == N)[0][0]]
-            p[i] = theory_point_dss(N=N, beta = beta_opt_array[i], sigma = sigma, gauss = (x, w))
+            beta_opt_array = beta_optimal_theory(N, sigma, gauss)
+            p[i] = theory_point_dss(N=N, beta = beta_opt_array, sigma = sigma, gauss = (x, w))
 
     return p
 
@@ -761,14 +757,11 @@ def plot_helstrom_vs_homodyne(N:float, sigma:list, p_helstrom:tuple, p_homodyne:
     #---------------- PLOT ------------
     # Find regions where squeezing is beneficial
     difference_hd = p_dss_hd - p_cs_hd
-  
-    idx_pos = np.where(difference_hd>0)[0]
+   
     idx_neg = np.where(difference_hd<0)[0]
-    idx_zero = np.where(difference_hd==0)[0]
+    idx_pos = np.where(difference_hd>0)[0]
     if len(idx_pos) == 0:
-        idx_pos = idx_neg
-    if len(idx_zero) == 0:
-            idx_zero = idx_neg
+            idx_pos = idx_neg
 
     fig, ax = plt.subplots(1, 1, figsize=(10,5), dpi=100)
     fig.suptitle(rf'$N={N}$', fontsize=16)
@@ -777,14 +770,14 @@ def plot_helstrom_vs_homodyne(N:float, sigma:list, p_helstrom:tuple, p_homodyne:
     ax.legend()
     ax.axvspan(sigma[idx_neg[0]], sigma[idx_neg[-1]], color='blue', alpha=0.10, label = 'Squeezing beneficial')
     ax.axvspan(sigma[idx_neg[-1]], sigma[idx_pos[-1]], color= "#AD0B90", alpha=0.10, label = 'Squeezing not beneficial')
-    ax.axvspan(sigma[idx_neg[-1]], sigma[idx_zero[-1]], color= "#AD0B90", alpha=0.10, label = 'Squeezing not beneficial')
+    ax.axhline(y=0, color ='gray', linestyle = '--', alpha=0.5)
     ax.set_xlabel(r'$\sigma$')
     ax.set_ylabel(r'$P^{(DSTS)}_{err}-P^{(DTS)}_{err}$')
     plt.tight_layout
+    plt.legend()
     plt.show()
 
     #---------------- PLOT ------------
-
     fig, ax = plt.subplots(1, 1, figsize=(10,5), dpi=100)
     fig.suptitle(rf'$N={N}$', fontsize=16)
     ax.plot(sigma, abs(p_helstrom_dss-p_dss_hd), linestyle='-', color='k', label='DSS')
@@ -792,8 +785,8 @@ def plot_helstrom_vs_homodyne(N:float, sigma:list, p_helstrom:tuple, p_homodyne:
     ax.legend()
     ax.axvspan(sigma[idx_neg[0]], sigma[idx_neg[-1]], color='blue', alpha=0.10, label = 'Squeezing beneficial')
     ax.axvspan(sigma[idx_neg[-1]], sigma[idx_pos[-1]], color= "#AD0B90", alpha=0.10, label = 'Squeezing not beneficial')
-    ax.axvspan(sigma[idx_neg[-1]], sigma[idx_zero[-1]], color= "#AD0B90", alpha=0.10, label = 'Squeezing not beneficial')
     ax.set_xlabel(r'$\sigma$')
     ax.set_ylabel(r'|$P^{(min)}_{err}-P^{(HD)}_{err}$|')
+    plt.legend()
     plt.tight_layout
     plt.show()
