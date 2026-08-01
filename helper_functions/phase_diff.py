@@ -564,8 +564,8 @@ def optimal_squeezing_noisefree(opt:bool = True, th:bool = True) -> None:
     beta_opt_line =  N/(2*N + 1)
 
     #-------------------------  R^2 OPTIMAL  -------------------------
-    ss_res_opt = np.sum((beta_opt_data - beta_opt_line)**2)
-    ss_tot_opt = np.sum((beta_opt_data - np.mean(beta_opt_data))**2)
+    ss_res_opt = np.sum((beta_opt_data[1:] - beta_opt_line[1:])**2)
+    ss_tot_opt = np.sum((beta_opt_data[1:] - np.mean(beta_opt_data[1:]))**2)
     R2_opt = 1 - ss_res_opt/ss_tot_opt
 
     if th:
