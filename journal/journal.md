@@ -231,7 +231,7 @@ From the DSS fitted error probability surface, the minimum value for each averag
 
 ***
 
-### Phase Diffusion Protocol
+## Phase Diffusion Protocol
 
 ***
 
@@ -251,9 +251,9 @@ Calculated the Helstrom bound for CS/DSS as a function of the noise parameter wi
 
 - The second part of the project was initially intended to focus on implementing these protocols experimentally on Xanadu's quantum photonic hardware. However, this was found to be infeasible because Xanadu's cloud service, previously accessible through Strawberry Fields (SF), is no longer available. Consequently, the second part of the project was redirected towards a theoretical extension.
 
-- Since SF draws measurements from the underlying probability distributions, it was decided to develop the Monte Carlo (MC) data-generation procedure analytically, without relying on the software implementation. This provides some insight into the mathematical background, and avoids treating the software as a black box. This method is also considerably faster, given that some processes can be parallelized, and MC data can be produced instantly, even for large samplings.
+- Since SF draws measurements from the underlying probability distributions, it was decided to develop the Monte Carlo (MC) data-generation procedure analytically, without relying on the software implementation. This provides some insight into the mathematical background, and avoids treating the software as a black box. This method is also considerably faster, given that some processes can be parallelized, and MC data can be produced more quickly, even for large number of samples.
 
-- The previous workflow (fitting the MC data to theoretical prediction and using the fitted surface to find beta_th/beta_opt), would be better if we intended to follow the experimental path. Since this project turned out to be solely a theoretical/computational investigation, it was decided that it is best to calculate statistical metrics to find the deviation of the MC data from the numerical solutions (since there is not always a closed form of the investigated quantity) for each step of the process. 
+- The previous workflow (fitting the MC data to theoretical prediction and using the fitted surface to find $\beta_{th}$/$\beta_{opt}$), would be better if we intended to follow the experimental path. Since this project turned out to be solely a theoretical/computational investigation, it was decided that it is best to calculate statistical metrics to find the deviation of the MC data from the numerical solutions (since there is not always a closed form of the investigated quantity) for each step of the process. 
 
 ***
 
@@ -291,23 +291,23 @@ Data was produced from this protocol, and the resulting error probabilities were
 
 $\beta_{th}(\mu)$ was determined from the MC data as the interpolated points satisfying $P^{(DSTS)}_{err}=P^{(DTS)}_{err}$.
 
-$\beta_{opt}(\mu)$ was determined by locating the minimum of the DSTS error probability MC data.
+$\beta_{opt}(\mu)$ was determined from teh MC data by locating the minimum of the DSTS error probability.
 
 
 ***
 
 ## Week 5 Overview (July 29 - August 5) 
 
-- Compared MC Data of $\beta_{th}$/$\beta_{opt}$ to theoretical numerical predictions
+- Compared MC Data of $\beta_{th}$/$\beta_{opt}$ to numerical predictions
 - Calculated $\sigma_{th}$ as a function of $\mu$
 - Calculated Helstrom bound for DTS/DSTS and compared it to the corresponding error probability 
-- Investigated effect of sigma_th on Helstrom bound
+- Investigated effect of $\sigma_{th}$ on Helstrom bound
 - Made code more efficient for all protocols
 - Started preparing for midterm presentation
 
 ***
 
-##  Compared MC Data of $\beta_{th}$/$\beta_{opt}$ to theoretical numerical predictions
+##  Compared MC Data of $\beta_{th}$/$\beta_{opt}$ to numerical predictions
 
 The equations $P^{DTS}_{err}-P^{DSTS}_{err}=0$ and $d/d\beta$ ($P^{DSTS}_{err}$)=0 were solved numerically using [Brent's method](https://en.wikipedia.org/wiki/Brent%27s_method) provided from the `SciPy` library. The resulting threshold and optimal values were found to be in excellent agreement with those extracted from the MC data.
 
