@@ -210,26 +210,149 @@ From the DSS fitted error probability surface, the minimum value for each averag
 
 ## Next steps:
 - Investigate Helstrom bound in CS/DSS phase diffusion protocol
-- Compare CS/DSS Helstrom bound to the corresponding error probability 
+- Compare the CS/DSS Helstrom bound to the corresponding error probability 
 - Investigate $\beta_{th}$ as a function of $\sigma$ for constant values of N 
 - Complete phase diffusion protocol by organizing files and ensuring smooth workflow
 
 ## Week 4 Overview (July 22-29) 
 
 ***
-- Completed phase diffusion protocol:
-    - Investigated Helstrom bound in CS/DSS phase diffusion protocol
-    - Compared CS/DSS Helstrom bound to the corresponding error probability 
-    - Investigated $\beta_{th}$ as a function of $\sigma$ for constant values of N 
 
-- Changed the workflow after meeting with supervisor:
-    - The second part of the project would focus on implementing these protocols experimentally on quantum photonic hardware, but came to the conclusion that this is not feasible due to limited availability of free-access quantum hardware and restricted gate availability. Thus, the second part of the project will focus on a theoretical extension, e.g. how entanglement or another quantum property can improve discrimination.
-    - Since SF draws measurements out of the underlying probability distributions, it was decided to also develop mathematically the Monte Carlo (MC) data production, without the use of the software. This provides some insight on the mathematical background, and avoids treating the software as a black box. This method is also considerably faster, given that some processes can be parallelized, and MC data can be produced instantly, even for large samplings.
-    - The previous workflow (fitting the MC data to theoretical prediction and using the fitted surface to do find beta_th/beta_opt), would be better if we intended to follow the experimental path. Since this project turned out to be solely a theoretical/computational investigation, it was decided that it is best to calculate statistical metrics to find the deviation of the MC data from the numerical solutions (since there is not always a closed form of the investigated quantity) for each step of the process.  
+- Completed phase diffusion protocol:
+    - Investigated $\beta_{th}$ as a function of $\sigma$ for constant values of N 
+    - Calculated Helstrom bound for CS/DSS and compared it to the corresponding error probability 
+    - Changed the workflow after meeting with supervisor
     - Organized files according to the new workflow
 
-- Started implementing the most general protocol which assumes a non-pure initial seed state with phase diffusion:
-    - Implemented the protocol in SF
-    - Produced MC data
-    - Found b_th/b_opt from MC data
+- Started implementing protocol with thermal noise:
+    - Studied theoretical results of the paper
+    - Implemented the protocol in SF and produced MC data
+    - Found $\beta_{th}$/$\beta_{opt}$ from MC data
 
+***
+
+### Phase Diffusion Protocol
+
+***
+
+### Investigated $\beta_{th}$ as a function of $\sigma$ for constant values of N 
+ 
+$\beta_{th}$ was plotted as a function of the noise parameter $\sigma$ for fixed values of the average photon number N. The results show that for a fixed number of N, the threshold value $\beta_{th}$ is lower as the noise parameter $\sigma$ increases. For a fixed value of $\sigma$, $\beta_{th}$ increases as N decreases. These results are in excellent agreement with those of the reference paper (Fig. 2).
+
+***
+
+### Calculated Helstrom bound for CS/DSS and compared it to the corresponding error probability 
+
+Calculated the Helstrom bound for CS/DSS as a function of the noise parameter with a fixed N. For the case of DSS, the optimal squeezing fraction was used. The calculation was carried out numerically by utilizing tools of the SF software. The results show that for low $\sigma$ values, the DSS Helstrom bound is much lower than the corresponding CS values and for higher values of $\sigma$ the two protocols seem to have a similar behaviour. The results are in excellent agreement with those of the reference paper (Fig. 3)
+
+***
+
+### Changed the workflow after meeting with supervisor:
+
+- The second part of the project was initially intended to focus on implementing these protocols experimentally on Xanadu's quantum photonic hardware. However, this was found to be infeasible because Xanadu's cloud service, previously accessible through Strawberry Fields (SF), is no longer available. Consequently, the second part of the project was redirected towards a theoretical extension.
+
+- Since SF draws measurements from the underlying probability distributions, it was decided to develop the Monte Carlo (MC) data-generation procedure analytically, without relying on the software implementation. This provides some insight into the mathematical background, and avoids treating the software as a black box. This method is also considerably faster, given that some processes can be parallelized, and MC data can be produced instantly, even for large samplings.
+
+- The previous workflow (fitting the MC data to theoretical prediction and using the fitted surface to find beta_th/beta_opt), would be better if we intended to follow the experimental path. Since this project turned out to be solely a theoretical/computational investigation, it was decided that it is best to calculate statistical metrics to find the deviation of the MC data from the numerical solutions (since there is not always a closed form of the investigated quantity) for each step of the process. 
+
+***
+
+### Organized files according to the new workflow
+
+All protocols have been modified so that they follow the new workflow, as outlined in the previous point.
+
+***
+
+## Protocol with Thermal Noise 
+
+***
+
+### Studied theoretical results of the paper
+
+This protocol assumes an initially mixed thermal state rather than a pure vacuum state, on which the squeezing and displacement operator act upon. The purity of the seed state is defined as $\mu = Tr[\rho^2]$, where $\rho$ is the density matrix of the seed state. 
+
+This is the most general protocol considered so far, as it incorporates both the phase-diffusion parameter $\sigma$ and the purity $\mu$, allowing the study of displaced thermal states (DTS) and displaced squeezed thermal states (DSTS).
+
+***
+
+### Implemented the protocol in SF and produced MC data
+
+To simulate the initial mixed state, a thermal state was created with average photon number $N_{th} = (1-\mu)/2\mu$. In the case of $\mu=1$ (pure vacuum), the known results are retrieved. In this case, the average photon number is
+
+$$N = |a|^2+N\beta+\frac{1-\mu}{2\mu}(1+2N\beta)$$
+
+where $|a|^2>0$, which imposes restrictions on the allowed values of $\beta$ and $\mu$ for a fixed number of N. Since the investigation is now over the purity, $\sigma$ and $N$ are kept fixed, while $\mu$ takes values in the allowed range.
+
+Data was produced from this protocol, and the resulting error probabilities were in excellent agreement with those of the reference paper (Fig. 4).
+
+***
+
+### Found $\beta_{th}$/$\beta_{opt}$ from MC data
+
+$\beta_{th}(\mu)$ was determined from the MC data as the interpolated points satisfying $P^{(DSTS)}_{err}=P^{(DTS)}_{err}$.
+
+$\beta_{opt}(\mu)$ was determined by locating the minimum of the DSTS error probability MC data.
+
+
+***
+
+## Week 5 Overview (July 29 - August 5) 
+
+- Compared MC Data of $\beta_{th}$/$\beta_{opt}$ to theoretical numerical predictions
+- Calculated $\sigma_{th}$ as a function of $\mu$
+- Calculated Helstrom bound for DTS/DSTS and compared it to the corresponding error probability 
+- Investigated effect of sigma_th on Helstrom bound
+- Made code more efficient for all protocols
+- Started preparing for midterm presentation
+
+***
+
+##  Compared MC Data of $\beta_{th}$/$\beta_{opt}$ to theoretical numerical predictions
+
+The equations $P^{DTS}_{err}-P^{DSTS}_{err}=0$ and $d/d\beta$ ($P^{DSTS}_{err}$)=0 were solved numerically using [Brent's method](https://en.wikipedia.org/wiki/Brent%27s_method) provided from the `SciPy` library. The resulting threshold and optimal values were found to be in excellent agreement with those extracted from the MC data.
+
+***
+
+## Calculated $\sigma_{th}$ as a function of $\mu$
+
+For the error probability $P_{err}$, there exists a threshold value of the noise parameter $\sigma_{th}$, beyond which there are no values of $\beta$ for which DSTS achieves a lower error probability than DTS. If $\sigma$>$\sigma_{th}$, squeezing no longer provides an advantage over displacement alone.
+
+To find $\sigma_{th}$ from the MC data, a range of phase-diffusion values was scanned. For each fixed value of $\mu$, the threshold was defined as the first value of $\sigma$ for which $\beta_{opt}=0$.
+
+The threshold was also numerically found by solving 
+
+$$P_{err}^{(\mathrm{DSTS})}\!\left(\beta_{\mathrm{opt}}(\mu,\sigma)\right) -
+P_{err}^{(\mathrm{DTS})} = 0$$
+
+ and it was found to be in excellent agreement with the MC data and results from the reference paper (Fig. 5).
+
+***
+
+## Calculated Helstrom bound for DTS/DSTS and compared it to the corresponding error probability 
+
+The Helstrom bound for DTS/DSTS was calculated numerically as a function of the purity $\mu$ for fixed values of the average photon number N and noise parameter $\sigma$. For the DSTS protocol, the optimal squeezing fraction was used.
+
+***
+
+## Investigated effect of $\sigma_{th}$ on Helstrom bound
+
+It was found that when $\sigma_{th}$ is reached, the Helstrom bound becomes the same for DSTS and DTS, thus squeezing offers no advantage. The $\sigma_{th}$ at which this occurs is in excellent agreement with the threshold obtained using the aforementioned procedures.
+
+***
+
+## Made code more efficient for all protocols
+
+Some time was spent optimizing procedures across all protocols, so that it is easier and faster to obtain the desired results.
+
+***
+
+## Started preparing for midterm presentation
+
+On the 13th of August the midterm presentation will take place, thus until then, the desired results will be collected and organized in a presentation.
+
+***
+
+## Next steps:
+
+- Finish preparations for presentation
+- Decide on the extension of the project
