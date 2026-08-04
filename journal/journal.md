@@ -307,13 +307,13 @@ $\beta_{opt}(\mu)$ was determined from teh MC data by locating the minimum of th
 
 ***
 
-##  Compared MC Data of $\beta_{th}$/$\beta_{opt}$ to numerical predictions
+###  Compared MC Data of $\beta_{th}$/$\beta_{opt}$ to numerical predictions
 
 The equations $P^{DTS}_{err}-P^{DSTS}_{err}=0$ and $d/d\beta$ ($P^{DSTS}_{err}$)=0 were solved numerically using [Brent's method](https://en.wikipedia.org/wiki/Brent%27s_method) provided from the `SciPy` library. The resulting threshold and optimal values were found to be in excellent agreement with those extracted from the MC data.
 
 ***
 
-## Calculated $\sigma_{th}$ as a function of $\mu$
+### Calculated $\sigma_{th}$ as a function of $\mu$
 
 For the error probability $P_{err}$, there exists a threshold value of the noise parameter $\sigma_{th}$, beyond which there are no values of $\beta$ for which DSTS achieves a lower error probability than DTS. If $\sigma$>$\sigma_{th}$, squeezing no longer provides an advantage over displacement alone.
 
@@ -328,25 +328,25 @@ P_{err}^{(\mathrm{DTS})} = 0$$
 
 ***
 
-## Calculated Helstrom bound for DTS/DSTS and compared it to the corresponding error probability 
+### Calculated Helstrom bound for DTS/DSTS and compared it to the corresponding error probability 
 
 The Helstrom bound for DTS/DSTS was calculated numerically as a function of the purity $\mu$ for fixed values of the average photon number N and noise parameter $\sigma$. For the DSTS protocol, the optimal squeezing fraction was used.
 
 ***
 
-## Investigated effect of $\sigma_{th}$ on Helstrom bound
+### Investigated effect of $\sigma_{th}$ on Helstrom bound
 
 It was found that when $\sigma_{th}$ is reached, the Helstrom bound becomes the same for DSTS and DTS, thus squeezing offers no advantage. The $\sigma_{th}$ at which this occurs is in excellent agreement with the threshold obtained using the aforementioned procedures.
 
 ***
 
-## Made code more efficient for all protocols
+### Made code more efficient for all protocols
 
 Some time was spent optimizing procedures across all protocols, so that it is easier and faster to obtain the desired results.
 
 ***
 
-## Started preparing for midterm presentation
+### Started preparing for midterm presentation
 
 On the 13th of August the midterm presentation will take place, thus until then, the desired results will be collected and organized in a presentation.
 
