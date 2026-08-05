@@ -707,7 +707,6 @@ def helstrom_bound(N:float, sigmas:np.array, fock_cutoff:int, cs = False):
 
 def perr_vs_sigma(N:float, sigmas:np.array, cs:bool):
 
-    N_grid = np.linspace(0, 2, 101)
     p = np.zeros((len(sigmas)))
     beta_opt_array = np.zeros((len(sigmas)))
     n_gh = 100
@@ -789,4 +788,67 @@ def plot_helstrom_vs_homodyne(N:float, sigma:list, p_helstrom:tuple, p_homodyne:
     ax.set_ylabel(r'|$P^{(min)}_{err}-P^{(HD)}_{err}$|')
     plt.legend()
     plt.tight_layout
+    plt.show()
+
+
+def helstrom_bound_noisefree(N:np.array, cs=False):
+
+    if not cs:
+        beta = N/(2*N + 1) #optimal value for noisefree case
+    else:
+        beta = 0
+
+    # Minimum theoretical error probability from the Helstrom bound
+    exponent = -4 * N * (1 - beta) * (1 + 2 * N * beta + 2 * np.sqrt(N * beta * (1 + N * beta)))
+    
+    perr = 0.5 * (1 - np.sqrt(1 - np.exp(exponent)))
+
+    return perr
+
+def perr_vs_N(N:np.array, cs:bool=False):
+
+    gauss = hermgauss(100)
+    p = np.zeros((len(N)))
+
+    if not cs:
+
+        for i, N_val in enumerate(N):
+
+            beta = N_val/(2*N_val + 1) #optimal value for noisefree case
+            p[i] = theory_point_dss(N=N_val, beta=beta, sigma=0, gauss=gauss)
+    else:
+
+        for i, N_val in enumerate(N):
+        
+            beta = 0
+            p[i] = theory_point_cs(N_val, sigma=0, gauss=gauss)
+
+    return p
+
+
+def plot_helstrom_vs_homodyne_noisefree(N:np.array):
+
+    p_helstrom_dss_noisefree = helstrom_bound_noisefree(N, cs=False)
+    p_helstrom_cs_noisefree = helstrom_bound_noisefree(N, cs=True)
+
+    p_dss_hd_noisefree = perr_vs_N(N, cs=False)
+    p_cs_hd_noisefree = perr_vs_N(N, cs=True)
+
+    fig, ax = plt.subplots(1, 2, figsize=(6, 3), dpi=300)
+
+    ax[0].set_ylabel(r'$P_{\text{err}}$')
+
+    ax[0].plot(N, p_helstrom_cs_noisefree, linestyle='--', color='k', label = r'$P^{\text{(MIN)}}_{CS}$')
+    ax[0].plot(N, p_cs_hd_noisefree, label = r'$P_{\text{err}}\left(|\pm a \rangle \right)$', color='b')
+
+    ax[1].plot(N, p_helstrom_dss_noisefree, linestyle='--', color='k', label = r'$P^{\text{(MIN)}}_{DSS}$')
+    ax[1].plot(N, p_dss_hd_noisefree, label = r'$P_{\text{err}}\left(|\pm a, r \rangle \right)$', color='r')
+
+    for axis in ax:
+        axis.legend()
+        axis.set_xlabel(r'$N$')
+
+    ax[1].text(0.5, 0.2, s = r'$\beta = \beta_{\text{optimal}}$', fontsize=13)
+    plt.tight_layout()
+
     plt.show()

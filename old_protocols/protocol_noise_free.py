@@ -1,3 +1,6 @@
+import sys
+sys.path.append("C:/Users/kpour/Desktop/Github/Quantum-Communications-Internship-IRIDA-/")
+
 import strawberryfields as sf
 from strawberryfields.ops import *
 import numpy as np
