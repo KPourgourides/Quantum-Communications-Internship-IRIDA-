@@ -237,13 +237,13 @@ From the DSS fitted error probability surface, the minimum value for each averag
 
 ### Investigated $\beta_{th}$ as a function of $\sigma$ for constant values of N 
  
-$\beta_{th}$ was plotted as a function of the noise parameter $\sigma$ for fixed values of the average photon number N. The results show that for a fixed number of N, the threshold value $\beta_{th}$ is lower as the noise parameter $\sigma$ increases. For a fixed value of $\sigma$, $\beta_{th}$ increases as N decreases. These results are in excellent agreement with those of the reference paper (Fig. 2).
+$\beta_{th}$ was plotted as a function of the noise parameter $\sigma$ for fixed values of the average photon number N. The results show that for a fixed number of N, the threshold value $\beta_{th}$ is lower as the noise parameter $\sigma$ increases. These results are in excellent agreement with those of the reference paper (Fig. 2).
 
 ***
 
 ### Calculated Helstrom bound for CS/DSS and compared it to the corresponding error probability 
 
-Calculated the Helstrom bound for CS/DSS as a function of the noise parameter with a fixed N. For the case of DSS, the optimal squeezing fraction was used. The calculation was carried out numerically by utilizing tools of the SF software. The results show that for low $\sigma$ values, the DSS Helstrom bound is much lower than the corresponding CS values and for higher values of $\sigma$ the two protocols seem to have a similar behaviour. The results are in excellent agreement with those of the reference paper (Fig. 3)
+Calculated the Helstrom bound for CS/DSS as a function of the noise parameter $\sigma$ with a fixed N. For the case of DSS, the optimal squeezing fraction was used. The calculation was carried out numerically by utilizing tools of the SF software. The results show that for low $\sigma$ values, the DSS Helstrom bound is much lower than the corresponding CS values and for higher values of $\sigma$ the two protocols seem to have a similar behaviour. The results are in excellent agreement with those of the reference paper (Fig. 3)
 
 ***
 
@@ -309,7 +309,7 @@ $\beta_{opt}(\mu)$ was determined from teh MC data by locating the minimum of th
 
 ###  Compared MC Data of $\beta_{th}$/$\beta_{opt}$ to numerical predictions
 
-The equations $P^{DTS}_{err}-P^{DSTS}_{err}=0$ and $d/d\beta$ ($P^{DSTS}_{err}$)=0 were solved numerically using [Brent's method](https://en.wikipedia.org/wiki/Brent%27s_method) provided from the `SciPy` library. The resulting threshold and optimal values were found to be in excellent agreement with those extracted from the MC data.
+The equations $P^{DTS}_{err}-P^{DSTS}_{err}=0$ and $d/d\beta$ ($P^{DSTS}_{err}$)=0 were solved numerically using [Brent's method](https://en.wikipedia.org/wiki/Brent%27s_method) provided from the `SciPy` library. The resulting threshold and optimal values $\beta_{th}$/$\beta_{opt}$ were found to be in excellent agreement with those extracted from the MC data.
 
 ***
 
@@ -336,7 +336,7 @@ The Helstrom bound for DTS/DSTS was calculated numerically as a function of the 
 
 ### Investigated effect of $\sigma_{th}$ on Helstrom bound
 
-It was found that when $\sigma_{th}$ is reached, the Helstrom bound becomes the same for DSTS and DTS, thus squeezing offers no advantage. The $\sigma_{th}$ at which this occurs is in excellent agreement with the threshold obtained using the aforementioned procedures.
+It was found that when $\sigma_{th}$ is reached, the Helstrom bound becomes the same for DSTS and DTS, validating that squeezing offers no advantage. 
 
 ***
 
