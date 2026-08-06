@@ -483,7 +483,7 @@ def plot_squeezing(N:float, sigmas:list, colors_opt:list, colors_th:list, opt:bo
     gauss = hermgauss(n_gh)
     mu_min = 1/(1 + 2*N)
     if opt or th:
-        plt.figure(figsize=(15,6), dpi=300)
+        plt.figure(figsize=(15,5), dpi=300)
     #---------- FIND THRESHOLD ----------
     
     beta_opt_data = beta_optimal_data(N, sigmas)
@@ -548,8 +548,8 @@ def plot_squeezing(N:float, sigmas:list, colors_opt:list, colors_th:list, opt:bo
         R2_opt = 1 - ss_res_opt/ss_tot_opt
 
         if opt or th:
-            plt.xlabel(r'$\mu$ (Purity of seed state)')
-            plt.ylabel(r'$\beta$ (Squeezing Fraction)')
+            plt.xlabel(r'$\mu$ ', fontsize=16)
+            plt.ylabel(r'$\beta$ ', fontsize=16)
             
         if th:
             plt.scatter(mus_grid, beta_th_data[f'sigma_{sigma}'], s=30, edgecolors='k', color=colors_th[i], marker='D', zorder=10, 
@@ -563,8 +563,9 @@ def plot_squeezing(N:float, sigmas:list, colors_opt:list, colors_th:list, opt:bo
             plt.plot(mus_grid[1:], beta_opt_theory[1:], color='k', linewidth = 3)
         
         if th or opt:
-            plt.legend()
+            plt.legend(fontsize=16)
             plt.tight_layout()
+            plt.title(f'N={N}', fontsize=16)
 
     if (not th) and (not opt):
         plt.clf()
@@ -632,10 +633,16 @@ def plot_sigma_threshold(N_vals:np.array, sigmas, mus_grid, colors_th, colors_po
         sigma_thresholds[i] = sigma_threshold_theory(N, mus_grid)
         sigma_thresholds_data[i] = sigma_threshold_data(N, sigmas, mus_grid)
 
+    
     plt.figure(figsize=(3, 3), dpi=200)
     
     for i, N in enumerate(N_vals):
-        plt.plot(mus_grid, sigma_thresholds[i], color=colors_th[i], linewidth=3, label=f'N={N}')
+        mask_NANS = np.isfinite(sigma_thresholds_data[i]) & np.isfinite(sigma_thresholds[i])
+        ss_res= np.sum((sigma_thresholds_data[i][mask_NANS] - sigma_thresholds[i][mask_NANS])**2)
+        ss_tot = np.sum((sigma_thresholds_data[i][mask_NANS] - np.mean(sigma_thresholds_data[i][mask_NANS]))**2)
+        R2 = 1 - ss_res/ss_tot
+
+        plt.plot(mus_grid, sigma_thresholds[i], color=colors_th[i], linewidth=1.2, label=f'N={N}, $R^2$={R2:.3f}')
         plt.fill_between(mus_grid, sigma_thresholds[i], 0, color=colors_th[i], alpha=0.5)
         plt.axvline(x=1/(1+2*N), linestyle='--', color=colors_th[i])
 
@@ -749,24 +756,25 @@ def plot_helstrom_vs_homodyne(p_helstrom, p_hd, N, sigma, mus_grid):
 
     #-------------------------------- PLOT --------------------------------
 
-    fig, ax = plt.subplots(1, 2, figsize=(10,5))
+    fig, ax = plt.subplots(1, 2, figsize=(10,3))
     fig.suptitle(rf'$N={N}$, $\sigma={sigma}$', fontsize=16)
 
-    ax[0].set_title('DSTS')
-    ax[0].plot(mus_grid, p_helstrom_dsts, linestyle='--', color='k', label='Helstrom')
-    ax[0].plot(mus_grid, p_dsts_hd, linestyle='-', color='b', label='Homodyne')
-    ax[0].set_yscale('log')
-    ax[0].set_ylabel(r'$P_{err}$')
-
-    ax[1].set_title(rf'DTS')
-    ax[1].plot(mus_grid, p_helstrom_dts, linestyle='--', color='k', label='Helstrom')
-    ax[1].plot(mus_grid, p_dts_hd, linestyle='-', color='b', label='Homodyne')
+    ax[1].set_title('DSTS')
+    ax[1].plot(mus_grid, p_helstrom_dsts, linestyle='--', color='k', label='$P_{(min)}$')
+    ax[1].plot(mus_grid, p_dsts_hd, linestyle='-', color='b', label='$P_{err}$')
     ax[1].set_yscale('log')
+    ax[1].text(0.8, 0.015, s = r'$\beta = \beta_{\text{opt}}$', fontsize=14)
+
+    ax[0].set_ylabel(r'$P$', fontsize=14)
+    ax[0].set_title(rf'DTS')
+    ax[0].plot(mus_grid, p_helstrom_dts, linestyle='--', color='k', label='$P^{(min)}$')
+    ax[0].plot(mus_grid, p_dts_hd, linestyle='-', color='b', label='$P_{err}$')
+    ax[0].set_yscale('log')
 
     for axis in ax:
         axis.set_ylim(np.nanmin(p_helstrom_dsts)/2, 2*np.nanmax(p_helstrom_dsts))
-        axis.legend()
-        axis.set_xlabel(r'$\mu$')
+        axis.legend(fontsize=14)
+        axis.set_xlabel(r'$\mu$', fontsize=14)
     plt.show()
 
     #-------------------------------- PLOT --------------------------------
@@ -775,22 +783,22 @@ def plot_helstrom_vs_homodyne(p_helstrom, p_hd, N, sigma, mus_grid):
 
     fig.suptitle(rf'$N={N}$, $\sigma={sigma}$', fontsize=16)
 
-    ax[0].plot(mus_grid, p_helstrom_dsts-p_helstrom_dts, linestyle='--', color='k', label='Helstrom')
-    ax[0].plot(mus_grid, p_dsts_hd-p_dts_hd, linestyle='-', color= 'b', label='Homodyne')
+    ax[0].plot(mus_grid, p_helstrom_dsts-p_helstrom_dts, linestyle='--', color='k', label='$P^{(min)}$')
+    ax[0].plot(mus_grid, p_dsts_hd-p_dts_hd, linestyle='-', color= 'b', label='$P_{err}$')
     ax[0].axvline(x=mu_th, color = "#AD0B90", linestyle = '--', label = r'$\sigma_{th}$ is reached', alpha=0.30)
     ax[0].axvspan(mus_grid[idx_neg[0]], mus_grid[idx_neg[-1]], color='blue', alpha=0.10, label = 'Squeezing beneficial')
     ax[0].axvspan(mus_grid[idx_neg[-1]], mus_grid[idx_pos[-1]], color= "#AD0B90", alpha=0.10, label = 'Squeezing not beneficial')
-    ax[0].set_ylabel(r'$P^{(DSTS)}_{err}-P^{(DTS)}_{err}$')
-    ax[0].set_xlabel(r'$\mu$')
-    ax[0].legend()
+    ax[0].set_ylabel(r'$P^{(DSTS)}_{err}-P^{(DTS)}_{err}$', fontsize=14)
+    ax[0].set_xlabel(r'$\mu$', fontsize=14)
+    ax[0].legend(fontsize=10)
     
     ax[0].axhline(y=0, color='gray', linestyle='--', linewidth=1)
 
     ax[1].plot(mus_grid, sigma_th, color='k', alpha=0.5 )
     ax[1].fill_between(mus_grid[mus_grid <= mu_th], sigma_th[mus_grid <= mu_th], 0, color='blue', alpha=0.10)
     ax[1].fill_between(mus_grid[mus_grid >= mu_th], sigma_th[mus_grid >= mu_th], 0, color="#AD0B90", alpha=0.10)
-    ax[1].set_xlabel('μ')
-    ax[1].set_ylabel(r'$\sigma_{th}$')
+    ax[1].set_xlabel('μ', fontsize=14)
+    ax[1].set_ylabel(r'$\sigma_{th}$', fontsize=14)
     ax[1].axvline(x=mu_th, color = "#AD0B90", linestyle = '--', alpha=0.30)
     ax[1].axhline(y=sigma, color = 'gray', linestyle = '--', alpha=0.30)
     plt.tight_layout()

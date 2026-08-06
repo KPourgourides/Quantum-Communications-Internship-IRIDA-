@@ -512,8 +512,8 @@ def plot_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = Fals
         if th or opt:
             plt.legend(fontsize=16)
             plt.tight_layout()
-            plt.xlabel(r'$N$ (Average number of photons)', fontsize=16)
-            plt.ylabel(r'$\beta$ (Squeezing Fraction)',  fontsize=16)
+            plt.xlabel(r'$N$', fontsize=16)
+            plt.ylabel(r'$\beta$ ',  fontsize=16)
             plt.ylim(0,1)
 
         if (not th) and (not opt):
@@ -569,9 +569,9 @@ def optimal_squeezing_noisefree(opt:bool = True, th:bool = True) -> None:
     R2_opt = 1 - ss_res_opt/ss_tot_opt
 
     if th:
-        plt.scatter(N, beta_th_data, s=30, edgecolors='k', color='white', marker='D', zorder=10, 
+        plt.scatter(N, beta_th_data, s=30, edgecolors='k', color='blue', marker='D', zorder=10, 
                     label = fr'$\beta_{{\rm th}}$: $R^2$ = {R2_th:0.3f}')
-        plt.fill_between(N, beta_th_theory, 0, alpha=0.8, zorder=0, color='blue')
+        plt.fill_between(N, beta_th_theory, 0, alpha=0.3, zorder=0, color='red')
         plt.plot(N, beta_th_theory, color='k', linewidth = 3)
 
     if opt:
@@ -579,13 +579,11 @@ def optimal_squeezing_noisefree(opt:bool = True, th:bool = True) -> None:
                     label = fr'$\beta_{{\rm opt}}$: $R^2$ = {R2_opt:0.3f}')
         plt.plot(N[1:], beta_opt_line[1:], color='k', linewidth = 3)
 
-        if not th:
-             plt.legend()
 
     if th:
-        plt.legend()
-        plt.xlabel(r'$N$ (Average number of photons)')
-        plt.ylabel(r'$\beta$ (Squeezing Fraction)')
+        plt.legend(fontsize=16)
+        plt.xlabel(r'$N$ ', fontsize=16)
+        plt.ylabel(r'$\beta$ ', fontsize=16)
         plt.tight_layout()
 
     if (not th) and (not opt):
