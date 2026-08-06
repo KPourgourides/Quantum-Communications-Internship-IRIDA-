@@ -433,7 +433,7 @@ def plot_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = Fals
     n_gh = 100
     gauss = hermgauss(n_gh)
 
-    plt.figure(figsize=(15,6), dpi=300)
+    plt.figure(figsize=(15,5), dpi=300)
 
     #---------- FIND THRESHOLD ----------
     beta_opt_dict = beta_optimal_data(sigmas)
@@ -510,10 +510,10 @@ def plot_squeezing(sigmas:list, colors_opt:list, colors_th:list, opt:bool = Fals
             plt.plot(N[1:], beta_opt_theory[1:], color='k', linewidth = 3)
 
         if th or opt:
-            plt.legend()
+            plt.legend(fontsize=16)
             plt.tight_layout()
-            plt.xlabel(r'$N$ (Average number of photons)')
-            plt.ylabel(r'$\beta$ (Squeezing Fraction)')
+            plt.xlabel(r'$N$ (Average number of photons)', fontsize=16)
+            plt.ylabel(r'$\beta$ (Squeezing Fraction)',  fontsize=16)
             plt.ylim(0,1)
 
         if (not th) and (not opt):
@@ -642,9 +642,9 @@ def beta_threshold_vs_sigma(N_values: np.ndarray, sigmas: np.ndarray, colors_1, 
 
     plt.ylim(-0.01, 1.01)
     plt.xlim(sigmas[0], sigmas[-1])
-    plt.xlabel(r"$\sigma$")
-    plt.ylabel(r"$\beta_{\rm th}$")
-    plt.legend()
+    plt.xlabel(r"$\sigma$", fontsize=14)
+    plt.ylabel(r"$\beta_{\rm th}$", fontsize=14)
+    plt.legend(fontsize=14)
     plt.tight_layout()
     plt.show()
 
@@ -733,23 +733,25 @@ def plot_helstrom_vs_homodyne(N:float, sigma:list, p_helstrom:tuple, p_homodyne:
 
     #---------------- PLOT ------------
 
-    fig, ax = plt.subplots(1, 2, figsize=(10,5), dpi=100)
+    fig, ax = plt.subplots(1, 2, figsize=(10,3), dpi=100)
     fig.suptitle(rf'$N={N}$', fontsize=16)
-    ax[0].set_title('DSS')
-    ax[0].plot(sigma, p_helstrom_dss, linestyle='--', color='k', label='Helstrom')
-    ax[0].plot(sigma, p_dss_hd, linestyle='-', color='b', label='Homodyne')
-    ax[0].set_yscale('log')
-
-    ax[1].set_title('CS')
-    ax[1].plot(sigma, p_helstrom_cs, linestyle='--', color='k', label='Helstrom')
-    ax[1].plot(sigma, p_cs_hd, linestyle='-', color='b', label='Homodyne')
+    ax[1].set_title('DSS', fontsize=14)
+    ax[1].plot(sigma, p_helstrom_dss, linestyle='--', color='k', label='$P^{(min)}$')
+    ax[1].plot(sigma, p_dss_hd, linestyle='-', color='b', label='$P_{err}$')
     ax[1].set_yscale('log')
+    ax[1].text(0.7, 2e-3, s = r'$\beta = \beta_{\text{opt}}$', fontsize=14)
+
+    ax[0].set_title('CS', fontsize=14)
+    ax[0].plot(sigma, p_helstrom_cs, linestyle='--', color='k', label='$P^{(min)}$')
+    ax[0].plot(sigma, p_cs_hd, linestyle='-', color='b', label='$P_{err}$')
+    ax[0].set_yscale('log')
 
     for axis in ax:
         axis.set_ylim(min(p_helstrom_dss)/2, 2*max(p_helstrom_dss))
-        axis.legend()
-        axis.set_xlabel(r'$\sigma$')
-        axis.set_ylabel(r'$P_{err}$')
+        axis.legend(fontsize=14)
+        axis.set_xlabel(r'$\sigma$', fontsize=14)
+
+    ax[0].set_ylabel(r'$P$', fontsize=14)
     plt.tight_layout
     plt.show()
 
@@ -836,19 +838,20 @@ def plot_helstrom_vs_homodyne_noisefree(N:np.array):
 
     fig, ax = plt.subplots(1, 2, figsize=(6, 3), dpi=300)
 
-    ax[0].set_ylabel(r'$P_{\text{err}}$')
+    ax[0].set_ylabel(r'$P$')
 
-    ax[0].plot(N, p_helstrom_cs_noisefree, linestyle='--', color='k', label = r'$P^{\text{(MIN)}}_{CS}$')
-    ax[0].plot(N, p_cs_hd_noisefree, label = r'$P_{\text{err}}\left(|\pm a \rangle \right)$', color='b')
+    ax[0].plot(N, p_helstrom_cs_noisefree, linestyle='--', color='k', label = r'$P^{\text{(min)}}$')
+    ax[0].plot(N, p_cs_hd_noisefree, label = r'$P_{\text{err}}$', color='b')
+    ax[0].set_title('CS')
 
-    ax[1].plot(N, p_helstrom_dss_noisefree, linestyle='--', color='k', label = r'$P^{\text{(MIN)}}_{DSS}$')
-    ax[1].plot(N, p_dss_hd_noisefree, label = r'$P_{\text{err}}\left(|\pm a, r \rangle \right)$', color='r')
-
+    ax[1].plot(N, p_helstrom_dss_noisefree, linestyle='--', color='k', label = r'$P^{\text{(min)}}$')
+    ax[1].plot(N, p_dss_hd_noisefree, label = r'$P_{\text{err}}$', color='b')
+    ax[1].set_title('DSS')
     for axis in ax:
-        axis.legend()
+        axis.legend(fontsize=14)
         axis.set_xlabel(r'$N$')
 
-    ax[1].text(0.5, 0.2, s = r'$\beta = \beta_{\text{optimal}}$', fontsize=13)
+    ax[1].text(0.5, 0.2, s = r'$\beta = \beta_{\text{opt}}$', fontsize=13)
     plt.tight_layout()
 
     plt.show()
