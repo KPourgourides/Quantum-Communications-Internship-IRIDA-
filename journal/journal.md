@@ -20,9 +20,6 @@ In this project we will follow closely the research paper [“Squeezing-enhanced
 - Derived analytically the expected probability error  
 - Visualised the error probability for the aforementioned protocols and fitted it to the derived probability error
 
-***
-
-## Progress
 
 ***
 
@@ -88,7 +85,6 @@ The produced data seem to follow well the derived error probability for both pro
 - Determine the optimal squeezing fraction $(\beta_{opt})$
 - Compare the error probability of both protocols with the corresponding Helstrom bound
 
-***
 
 ## Week 2 Overview (July 8-15) 
 
@@ -357,7 +353,6 @@ On the 13th of August the midterm presentation will take place, thus until then,
 - Finish preparations for presentation
 - Decide on the extension of the project
 
-***
 
 ## Week 6 Overview (August 5 - 12) 
 
@@ -394,5 +389,3 @@ Motivated by the midterm presentation feedback, I started investigating the theo
 - Read the literature suggested by my supervisor and develop an understanding of the new concepts
 - Identify and review relevant literature independently
 - Continue report writing
-
-***
