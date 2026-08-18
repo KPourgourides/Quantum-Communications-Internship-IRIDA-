@@ -356,3 +356,43 @@ On the 13th of August the midterm presentation will take place, thus until then,
 
 - Finish preparations for presentation
 - Decide on the extension of the project
+
+***
+
+## Week 6 Overview (August 5 - 12) 
+
+- Midterm presentation preparation 
+
+***
+
+### Midterm presentation preparation
+
+Prepared all necessary graphs and results and incorporated them into a structured power point presentation summarizing all work done up to this week. Additionally, revised all ideas and formulas studied so far and practiced the presentation to improve clarity and delivery.  
+
+***
+
+## Week 7 Overview (August 12 - 19) 
+
+- Report writing
+- Started developing the theoretical connection between photon loss and thermal noise
+
+***
+
+### Report writing
+
+Started preparing the theoretical background and presenting the obtained results in the form of a research report.
+
+***
+### Started developing the theoretical connection between photon loss and thermal noise
+
+Motivated by the midterm presentation feedback, I started investigating the theoretical connection between photon loss and thermal noise, with particular focus on Eqs. (23)–(25) of the reference paper.
+
+***
+
+## Next steps:
+
+- Read the literature suggested by my supervisor and develop an understanding of the new concepts
+- Identify and review relevant literature independently
+- Continue report writing
+
+***
