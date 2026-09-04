@@ -400,6 +400,7 @@ Motivated by the midterm presentation feedback, I started investigating the theo
 ### Completed the theoretical investigation of the connection between photon loss and thermal noise in the initial vacuum state
 
 Photon loss channel's results can be obtained by relating the involved parameters (loss: $\eta$, squeezing: $\tilde{r}$) with the parameters of the channel with thermal noise in the initial vacuum state (purity: $\mu$, squeezing: $r$). These relations can be obtained by equating the variances of the two conjugate quadratures, $X_0$ and $X_{\pi/2}$, for the two descriptions.
+
 ***
 ### Completed the first draft of the report for the first part of the project
 
@@ -417,6 +418,7 @@ The first draft of the report has been completed up to the results obtained in W
 ### Read literature suggested by supervisor and other papers relevant to the project
 
 Many papers were studied during this period to make an informed choice on the project's extension. The topics considered included extending the protocol from binary phase-shift keying (BPSK) to higher-order phase-shift keying schemes, incorporating entanglement into the existing protocol, investigating the role of squeezing in continuous-variable (CV) quantum key distribution (QKD) protocols, exploring non-Gaussianity as a resource, etc. 
+
 ***
 
 ### Finalized the extension of the project with supervisor after proposing a new research question.
@@ -427,13 +429,22 @@ The idea behind the protocol is:\
 Alice prepares coherent states whose phase and amplitude quadratures are modulated according to Gaussian distributions. Bob randomly chooses one of the two quadratures and measures it using homodyne detection. He then publicly announces which quadrature was measured, allowing Alice to retain only the corresponding modulation values for the key generation process. Alice and Bob subsequently perform either direct reconciliation (DR) or reverse reconciliation (RR). In DR, Bob performs error correction using Alice's data as the reference, whereas in RR, Alice performs error correction using Bob's data as the reference. The reconciliation efficiency, denoted by $b$, quantifies how close the reconciliation procedure is to the ideal case, with $b=1$ corresponding to perfect reconciliation and $b<1$ to imperfect reconciliation. Assuming that an eavesdropper, Eve, can access the channel through a beamsplitter attack, the maximum amount of information available to Eve can be quantified using the Holevo bound, $\chi_E$. The objective is then to calculate the lower bound of the secret key rate (SKR), which quantifies the rate at which Alice and Bob can generate a secure key while limiting Eve's information about it. The main goal of this investigation is to compare the SKR in the presence and absence of squeezing and determine whether squeezing can provide an advantage as a resource in CV-QKD protocols.
 
 ***
+
 ### Started implementing coherent-state QKD protocol in noise-free channel
 
 The protocol has been implemented using Strawberry Fields (SF). Alice samples from a  Gaussian two values ($a_p, a_x$) and uses them to modulate the phase and amplitude quadratures of the coherent state, respectively. Bob measures randomly one of the two quadratures using homodyne detection and Alice retains only the corresponding modulation values for the key generation.
 
 ***
+
 ### Calculated mutual information $I_{AB}$ between Alice and Bob in coherent-state noise-free channel
 
 From the retained values of Alice and the measurements of Bob, we can calculate the quantity of mutual information ($I_{AB}$), which quantifies the amount of information that Bob's measurement provides about Alice's modulation values and therefore characterizes the correlation between their data. This quantity is very useful as it can be used to obtain the lower bound of the SKR which is equal to:
 $$K=I_{AB}*b-\chi_E$$
+
+***
+
+## Next steps:
+- Calculate the Holevo bound for RR and DR in noise-free coherent-state channel
+
+- Calculate the mutual information between Alice and Bob and the Holevo bound for RR and DR in the noise-free displaced-squeezed-state channel 
 
