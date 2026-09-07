@@ -104,8 +104,23 @@ def key_rate(b, I, x):
     return b*np.array(I)-np.array(x)
 
 #=========================================================================================================
+#                             HOLEVO BOUND 
+#=========================================================================================================
+
+def G(x):
+    # nu is a symplectic eigenvalue, vacuum = 1
+    if x <= 1 + 1e-12:
+        return 0.0
+
+    n = (x - 1) / 2
+
+    return (n + 1)*np.log2(n + 1) - n*np.log2(n)
+
+
+#=========================================================================================================
 #                        HOLEVO BOUND RR PROTOCOL
 #=========================================================================================================
+
 
 def holevo_RR(var_a, eta, V):
 
@@ -124,16 +139,6 @@ def holevo_RR(var_a, eta, V):
     return chi, chi_x, chi_p
 
 
-def G(x):
-    # nu is a symplectic eigenvalue, vacuum = 1
-    if x <= 1 + 1e-12:
-        return 0.0
-
-    n = (x - 1) / 2
-
-    return (n + 1)*np.log2(n + 1) - n*np.log2(n)
-
-
 def lambda_RR(var_a, eta, V):
 
     # Covariance of Alice's modulated transmitted state
@@ -150,25 +155,55 @@ def lambda_RR(var_a, eta, V):
     # Bob after pure-loss channel
     bx = eta*sx + (1 - eta)
     bp = eta*sp + (1 - eta)
-
-    
+ 
     # AB covariance matrix
-    detA = mu**2
+    detA = sx*sp
     detB = bx * bp
     detC = -eta * cx * cp
 
     Delta = detA + detB + 2*detC
-
     detAB = ((mu*bx - eta*cx**2)*(mu*bp - eta*cp**2))
-
     discriminant = Delta**2 - 4*detAB
-    
+
     lambda1 = np.sqrt((Delta + np.sqrt(discriminant))/2)
     lambda2 = np.sqrt((Delta - np.sqrt(discriminant))/2)
     lambda3_x = np.sqrt(mu * (mu - eta*cx**2/bx))
     lambda3_p = np.sqrt(mu * (mu - eta*cp**2/bp))
 
     return lambda1, lambda2, lambda3_x, lambda3_p
+
+
+# =========================================================================================================
+#                         HOLEVO BOUND DR PROTOCOL
+# =========================================================================================================
+
+def holevo_DR(var_a, eta, V):
+
+    # Alice's squeezed state + classical modulation
+    sx = V + var_a
+    sp = 1 / V + var_a
+
+    # Eve unconditional covariance
+    ex = (1 - eta) * sx + eta
+    ep = (1 - eta) * sp + eta
+    lambda_E = np.sqrt(ex * ep)
+
+    # Eve conditioned on Alice's X modulation
+    ex_cond_x = (1 - eta) * V + eta
+    ep_cond_x = (1 - eta) * sp + eta
+    lambda_cond_x = np.sqrt(ex_cond_x * ep_cond_x)
+    chi_x = G(lambda_E) - G(lambda_cond_x)
+    
+    # Eve conditioned on Alice's P modulation
+    ex_cond_p = (1 - eta) * sx + eta
+    ep_cond_p = (1 - eta) / V + eta
+    lambda_cond_p = np.sqrt(ex_cond_p * ep_cond_p)
+    chi_p = G(lambda_E) - G(lambda_cond_p)
+
+    return chi_x, chi_p
+
+
+
 
 
 
