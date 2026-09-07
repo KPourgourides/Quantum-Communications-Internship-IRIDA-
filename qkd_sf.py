@@ -181,7 +181,7 @@ def holevo_DR(var_a, eta, V):
 
     # Alice's squeezed state + classical modulation
     sx = V + var_a
-    sp = 1 / V + var_a
+    sp = 1/V + var_a
 
     # Eve unconditional covariance
     ex = (1 - eta) * sx + eta
@@ -196,18 +196,55 @@ def holevo_DR(var_a, eta, V):
     
     # Eve conditioned on Alice's P modulation
     ex_cond_p = (1 - eta) * sx + eta
-    ep_cond_p = (1 - eta) / V + eta
+    ep_cond_p = (1 - eta)/V + eta
     lambda_cond_p = np.sqrt(ex_cond_p * ep_cond_p)
     chi_p = G(lambda_E) - G(lambda_cond_p)
 
     return chi_x, chi_p
 
 
+# =========================================================================================================
+#                         HOLEVO BOUND DR
+# =========================================================================================================
+
+def sf_covariance(eta, V):
+
+    r = -np.log(V)/2
+    theta = np.arccos(np.sqrt(eta))
+    prog = sf.Program(2)
+
+    with prog.context as q:
+
+        Vac | q[0]
+        Sgate(r, 0) | q[0]
+        Vac | q[1]
+        BSgate(theta, 0.0) | (q[0], q[1])
+
+    eng = sf.Engine("gaussian")
+    result = eng.run(prog)
+    gamma_BE = result.state.cov()
+
+    return gamma_BE[np.ix_([1, 3], [1, 3])]
 
 
+def holevo_DR_SF(eta, var_a, V, basis="x"):
 
+    # Quantum covariance
+    gamma_E_q = sf_covariance(eta,var_a, V)
 
+    # Add classical variance
+    gamma_E = gamma_E_q + (1 - eta) * var_a * np.eye(2)
 
+    # Condition on Alice's results
+    gamma_E_cond = gamma_E_q.copy()
 
+    if basis == "x":
+        gamma_E_cond[1, 1] += (1 - eta) * var_a
+    elif basis == "p":
+        gamma_E_cond[0, 0] += (1 - eta) * var_a
 
+    nu_E = np.sqrt(np.linalg.det(gamma_E))
+    nu_cond = np.sqrt(np.linalg.det(gamma_E_cond))
+
+    return G(nu_E) - G(nu_cond)
 
