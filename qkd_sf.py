@@ -61,7 +61,7 @@ def theoretical_I_AB(var_a, eta, V):
     return I_AB, I_AB_x, I_AB_p
 
 
-def bitstr_to_base(bitstr, quadr, base):
+def bitstr_to_base(bitstr, base, quadr):
 
     return [val for i, val in enumerate(bitstr) if base[i] == quadr]
 
@@ -75,11 +75,11 @@ def MC_I_AB(var_a_grid, eta, keylen, V):
 
     for i,var_a in enumerate(var_a_grid):
         alice_bitstr, bob_bitstr, base = sf_protocol(eta, var_a, keylen, V)
-        alice_bitstr_x = bitstr_to_base(alice_bitstr, 0, base)
-        bob_bitstr_x = bitstr_to_base(bob_bitstr, 0, base)
+        alice_bitstr_x = bitstr_to_base(alice_bitstr, base, 0)
+        bob_bitstr_x = bitstr_to_base(bob_bitstr, base, 0)
 
-        alice_bitstr_p = bitstr_to_base(alice_bitstr, 1, base)
-        bob_bitstr_p = bitstr_to_base(bob_bitstr, 1, base)
+        alice_bitstr_p = bitstr_to_base(alice_bitstr, base, 1)
+        bob_bitstr_p = bitstr_to_base(bob_bitstr, base, 1)
 
         rho_x = np.corrcoef(alice_bitstr_x, bob_bitstr_x)[0, 1]
         I_AB_x = -0.5 * np.log2(1 - rho_x**2)
@@ -108,8 +108,7 @@ def key_rate(b, I, x):
 #=========================================================================================================
 
 def G(x):
-    # nu is a symplectic eigenvalue, vacuum = 1
-    if x <= 1 + 1e-12:
+    if x <= 1:
         return 0.0
 
     n = (x - 1) / 2
@@ -224,27 +223,66 @@ def sf_covariance(eta, V):
     result = eng.run(prog)
     gamma_BE = result.state.cov()
 
-    return gamma_BE[np.ix_([1, 3], [1, 3])]
+    return gamma_BE
 
 
 def holevo_DR_SF(eta, var_a, V, basis="x"):
 
     # Quantum covariance
-    gamma_E_q = sf_covariance(eta,var_a, V)
+    gamma_BE = sf_covariance(eta, V)
+    gamma_E_q = np.array([[gamma_BE[1][1], gamma_BE[1][3]], [gamma_BE[3][1], gamma_BE[3][3]]])
 
-    # Add classical variance
+    # Adding classical variance
     gamma_E = gamma_E_q + (1 - eta) * var_a * np.eye(2)
 
-    # Condition on Alice's results
-    gamma_E_cond = gamma_E_q.copy()
+    # Conditional covariance on Alice's result
+    gamma_E_cond = gamma_E.copy()
 
     if basis == "x":
-        gamma_E_cond[1, 1] += (1 - eta) * var_a
+        gamma_E_cond[0, 0] -=  (1 - eta) * var_a
+
     elif basis == "p":
-        gamma_E_cond[0, 0] += (1 - eta) * var_a
+        gamma_E_cond[1, 1] -=  (1 - eta) * var_a
 
     nu_E = np.sqrt(np.linalg.det(gamma_E))
     nu_cond = np.sqrt(np.linalg.det(gamma_E_cond))
 
     return G(nu_E) - G(nu_cond)
 
+
+def holevo_RR_SF(eta, var_a, V, basis="x"):
+
+    # Quantum covariance from SF
+    gamma_BE_q = sf_covariance(eta, V)
+
+    # Adding classical variance
+    s = np.sqrt(eta * (1 - eta))
+
+    gamma_mod = var_a * np.array([
+        [eta, s, 0, 0],
+        [s, 1 - eta, 0, 0],
+        [0, 0, eta, s],
+        [0, 0, s, 1 - eta]])
+
+    gamma_BE = gamma_BE_q + gamma_mod
+
+    # Eve's covariance
+    gamma_E = gamma_BE[np.ix_([1, 3], [1, 3])]
+
+    # Condition on Bob's measurement
+    if basis == "x":
+
+        V_B = gamma_BE[0, 0]
+        c = gamma_BE[[1, 3], 0]
+
+    elif basis == "p":
+
+        V_B = gamma_BE[2, 2]
+        c = gamma_BE[[1, 3], 2]
+
+    gamma_E_cond = gamma_E - np.outer(c, c) / V_B
+
+    nu_E = np.sqrt(np.linalg.det(gamma_E))
+    nu_cond = np.sqrt(np.linalg.det(gamma_E_cond))
+
+    return G(nu_E) - G(nu_cond)
