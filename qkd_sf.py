@@ -91,8 +91,6 @@ def MC_I_AB(var_a_grid, eta, keylen, V):
         I_grid_x[i] = I_AB_x
         I_grid_p[i] = I_AB_p
 
-        print(f"\rProgress: {i+1}/{len(var_a_grid)}", end="", flush=True)
-
     return I_grid, I_grid_x, I_grid_p
     
 
