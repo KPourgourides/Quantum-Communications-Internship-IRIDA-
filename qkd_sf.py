@@ -92,14 +92,45 @@ def MC_I_AB(var_a_grid, eta, keylen, V):
         I_grid_p[i] = I_AB_p
 
     return I_grid, I_grid_x, I_grid_p
+
+
+def get_mutual_information_MC(var_a_grid, V_grid, eta_grid, keylen):
+    Ix_per_eta_dict_MC = {}
+
+    for j, eta in enumerate(eta_grid):
+        I_grid_x = np.zeros((len(var_a_grid), len(V_grid)))
+        for i,v in enumerate(V_grid):
+            I, I_x, I_p = MC_I_AB(var_a_grid, eta, keylen, v)
+            I_grid_x[:,i] = I_x
+            
+        Ix_per_eta_dict_MC[f'eta_{eta}'] = I_grid_x
+        print(f"\rProgress: {j+1}/{len(eta_grid)}", end="", flush=True)
+    return Ix_per_eta_dict_MC
+
+
+def get_mutual_information_th(var_a_grid, V_grid, eta_grid):
+    Ix_per_eta_dict_th = {}
+
+    for j, eta in enumerate(eta_grid):
+        th_I_grid_x = np.zeros((len(var_a_grid), len(V_grid)))
+
+        for i,v in enumerate(V_grid):
+            th_I, th_I_x, th_I_p = theoretical_I_AB(var_a_grid, eta, v)
+            th_I_grid_x[:,i] = th_I_x
+
+        Ix_per_eta_dict_th[f'eta_{eta}'] = th_I_grid_x
+        print(f"\rProgress: {j+1}/{len(eta_grid)}", end="", flush=True)
+    return Ix_per_eta_dict_th
+
+
     
 
 #=========================================================================================================
 #                        KEY RATE
 #=========================================================================================================
 
-def key_rate(b, I, x):
-    return b*np.array(I)-np.array(x)
+def key_rate(b, I, chi):
+    return b*I-chi
 
 #=========================================================================================================
 #                             HOLEVO BOUND 
@@ -112,6 +143,25 @@ def G(x):
     n = (x - 1) / 2
 
     return (n + 1)*np.log2(n + 1) - n*np.log2(n)
+
+
+def get_Holevo_bound(var_a_grid, V_grid, eta_grid, protocol):
+    
+    chix_per_eta_dict = {}
+    
+    for k,eta in enumerate(eta_grid):
+        th_chix_grid = np.zeros((len(var_a_grid), len(V_grid)))
+        for i,var_a in enumerate(var_a_grid):
+            for j,v in enumerate(V_grid):
+                if protocol=='RR':
+                    th_chix_grid[i][j] = holevo_RR_SF(eta, var_a, v, 'x')
+                elif protocol=='DR':
+                    th_chix_grid[i][j] = holevo_DR_SF(eta, var_a, v, 'x')
+        chix_per_eta_dict[f'eta_{eta}'] = th_chix_grid
+        print(f"\rProgress: {k+1}/{len(eta_grid)}", end="", flush=True)
+
+    return chix_per_eta_dict
+
 
 
 #=========================================================================================================
