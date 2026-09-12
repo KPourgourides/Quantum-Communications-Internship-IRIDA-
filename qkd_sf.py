@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import strawberryfields as sf
 from strawberryfields.ops import*
+import plotly.graph_objects as go
 
 
 #=========================================================================================================
@@ -122,8 +123,6 @@ def get_mutual_information_th(var_a_grid, V_grid, eta_grid):
         print(f"\rProgress: {j+1}/{len(eta_grid)}", end="", flush=True)
     return Ix_per_eta_dict_th
 
-
-    
 
 #=========================================================================================================
 #                        KEY RATE
@@ -330,3 +329,156 @@ def holevo_RR_SF(eta, var_a, V, basis="x"):
     nu_cond = np.sqrt(np.linalg.det(gamma_E_cond))
 
     return G(nu_E) - G(nu_cond)
+
+# =========================================================================================================
+#                         SQUEEZING THRESHOLD
+# =========================================================================================================
+
+def cs_b_th(I_per_eta_dict_th, chix_per_eta_dict, eta_grid):
+
+    bs = np.linspace(0.0, 1, 2000)
+    low_b_cs=np.ones((len(eta_grid)))
+
+    for i,eta_DR in enumerate(eta_grid):
+        th_I_grid_x = I_per_eta_dict_th[f'eta_{eta_DR}'][:, -1]
+        th_chi_x_grid = chix_per_eta_dict[f'eta_{eta_DR}'][:, -1]
+        for b in bs:
+            K_grid = key_rate(b, th_I_grid_x, th_chi_x_grid)
+            max_value = np.nanmax(K_grid)
+            if max_value>=1e-3:
+                low_b_cs[i]=b
+                break
+    return low_b_cs
+
+
+def b_th(I_per_eta_dict_th, chix_per_eta_dict, eta_grid):
+
+    bs = np.linspace(0.0, 1, 2000)
+    low_b = np.ones((len(eta_grid)))
+
+    for i,eta_DR in enumerate(eta_grid):
+        th_I_grid_x = I_per_eta_dict_th[f'eta_{eta_DR}'][:, :-1]
+        th_chi_x_grid = chix_per_eta_dict[f'eta_{eta_DR}'][:, :-1]
+        for b in bs:
+            K_grid = key_rate(b, th_I_grid_x, th_chi_x_grid)
+            max_value = np.nanmax(K_grid)
+            if max_value>=1e-3:
+                low_b[i]=b
+                break
+    return low_b
+
+# =========================================================================================================
+#                        OPTIMUM
+# =========================================================================================================
+
+def var_a_optimal_data(I, chi, bs, var_a) -> dict:
+
+    var_a_opt_dict = {}
+
+    for b in bs:
+        K = key_rate(b, I, chi)
+        idx = np.nanargmax(K, axis=0)
+        var_a_opt = var_a[idx]
+        var_a_opt_dict[f'b_{b}'] = var_a_opt
+
+    return var_a_opt_dict
+
+# =========================================================================================================
+#                         PLOTS
+# =========================================================================================================
+
+def plot_I_chi(eta,  V_grid, var_a_grid, I_per_eta_dict_th, chix_per_eta_dict, I_per_eta_dict_MC, MC = 'False'):
+
+    th_I_grid_x_RR = I_per_eta_dict_th[f'eta_{eta}']
+    th_chi_x_grid = chix_per_eta_dict[f'eta_{eta}']
+
+    if MC:
+        print('hi')
+        I_grid_x = I_per_eta_dict_MC[f'eta_{eta}']
+
+    fig = go.Figure()
+    V_mesh, var_a_mesh = np.meshgrid(V_grid, var_a_grid)
+    #fig.add_trace(go.Scatter3d(x=V_mesh.ravel(), y=var_a_mesh.ravel(), z=I_grid_x_RR.ravel(), mode='markers', marker=dict(size=3, color='blue')))
+    fig.add_trace(go.Surface(x=V_grid, y=var_a_grid, z=th_I_grid_x_RR, surfacecolor=np.zeros_like(th_I_grid_x_RR), colorscale=[[0.0, 'magenta'], [1.0, 'blue']], showscale=False))
+
+    fig.add_trace(go.Surface(x=V_grid, y=var_a_grid, z=th_chi_x_grid, surfacecolor=np.zeros_like(th_chi_x_grid), colorscale=[[0.0, 'red'], [1.0, 'red']], showscale=False))
+
+    fig.update_layout(scene=dict(xaxis_title="V", yaxis_title=r"var_a", zaxis = dict(title="Info"), aspectmode ="cube"), width=900, height=750)
+
+    fig.show()
+
+
+def plot_K(b, eta, var_a_grid, V_grid, I_per_eta_dict_th, chix_per_eta_dict):
+
+    th_I_grid_x = I_per_eta_dict_th[f'eta_{eta}']
+    th_chi_x_grid = chix_per_eta_dict[f'eta_{eta}']
+
+    K = key_rate(b, th_I_grid_x, th_chi_x_grid)
+    fig = go.Figure()
+
+    var_a_mesh, V_mesh = np.meshgrid(var_a_grid, V_grid)
+
+    fig.add_trace(go.Surface(x=V_grid, y=var_a_grid, z= K))
+    fig.add_trace(go.Surface(x=V_grid, y=var_a_grid, z=np.zeros((len(var_a_grid), len(V_grid)))))
+
+    fig.update_layout(scene=dict(xaxis_title="V", yaxis_title="var_a", zaxis = dict(title="K"), aspectmode ="cube"), width=900, height=750)
+    fig.show()
+
+
+def plot_2D_chi_I_K(b, eta, V, var_a_grid, V_grid, I_per_eta_dict_th, chix_per_eta_dict):
+
+    th_I_grid_x = I_per_eta_dict_th[f'eta_{eta}']
+    th_chi_x_grid = chix_per_eta_dict[f'eta_{eta}']
+
+    idx = np.where(V_grid==V)[0][0]
+    th_I_x = (th_I_grid_x[:, idx])
+    th_chi_x = (th_chi_x_grid[:, idx])
+    th_K = key_rate(b, th_I_x, th_chi_x)
+
+    fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(10, 8), dpi=100)
+
+    ax[0].set_title(rf'$\beta$={b}, V={V} and $\eta$={eta}', fontsize=15)
+    #ax[0].scatter(var_a_grid, I_x, s=15, color = 'magenta')
+    ax[0].plot(var_a_grid, th_I_x, '--', color='magenta', label=r'$I_{AB}$')
+    ax[0].plot(var_a_grid, th_chi_x, 'b--', label=r'$\chi_{BE}$')
+    ax[0].set_ylabel(r'Information', fontsize=15)
+    ax[0].legend(fontsize=15)
+
+    ax[1].plot(var_a_grid, th_K, '--r', label = f'Key-Rate')
+    #ax[1].scatter(var_a_grid, qsf.key_rate(b, I_x, th_chi_x), s=15, color = 'red', label = f'MC Key-Rate')
+    ax[1].axhline(0)
+    ax[1].set_xlabel(r'$Var_{{\alpha}}$', fontsize=15)
+    ax[1].set_ylim(0)
+    ax[1].set_ylabel(r'$K$', fontsize=15)
+    plt.grid(True)
+    plt.tight_layout()
+
+
+def plot_K_regions(eta_grid, I_per_eta_dict_th, chix_per_eta_dict):
+
+    low_b = b_th(I_per_eta_dict_th, chix_per_eta_dict, eta_grid)
+    low_b_cs = cs_b_th(I_per_eta_dict_th, chix_per_eta_dict, eta_grid)
+
+    plt.plot(eta_grid, low_b, '--', color='k', linewidth=2)
+    plt.plot(eta_grid, low_b_cs, '--', color='k', linewidth=2)
+    plt.fill_between(eta_grid, low_b, low_b_cs, color='gold', alpha=0.6)
+    plt.fill_between(eta_grid, low_b_cs, 1, color='green', alpha=0.6)
+    plt.fill_between(eta_grid, low_b, 0, color='red', alpha=0.6)
+    plt.xlabel(r'$\eta$')
+    plt.ylabel(r'$b_{th}$')
+
+
+def plot_opt(b, eta, var_a_grid, V_grid, I_per_eta_dict_th, chix_per_eta_dict):
+
+    th_I_grid_x = I_per_eta_dict_th[f'eta_{eta}']
+    th_chi_x_grid = chix_per_eta_dict[f'eta_{eta}']
+
+    bs = np.linspace(0.90, 1, 11)
+    var_a_opt_dict = var_a_optimal_data(th_I_grid_x, th_chi_x_grid, bs, var_a_grid)
+
+    fig = plt.figure(figsize=(8, 5), dpi=150)
+    for b in bs:
+        plt.plot(V_grid, var_a_opt_dict[f'b_{b}'], label=f'{b:.2f}')
+    plt.xlabel('V')
+    plt.ylabel('var_a optimal')
+    plt.legend()
