@@ -6,10 +6,10 @@ import plotly.graph_objects as go
 
 
 #=========================================================================================================
-#                        PROTOCOL
+#                        PROTOCOL SF
 #=========================================================================================================
 
-def sf_protocol(eta, var, keylen, V):
+def sf_protocol(eta, var_a, keylen, V):
 
     bob_bitstr = np.zeros((keylen))
     alice_bitstr = np.zeros((keylen))
@@ -24,8 +24,8 @@ def sf_protocol(eta, var, keylen, V):
             Vac | q[0]
             Sgate(r, 0) | q[0] 
 
-            alpha_p = np.random.normal(0, np.sqrt(var))
-            alpha_q = np.random.normal(0, np.sqrt(var))
+            alpha_p = np.random.normal(0, np.sqrt(var_a))
+            alpha_q = np.random.normal(0, np.sqrt(var_a))
             Xgate(alpha_q) | q[0]
             Zgate(alpha_p) | q[0]
 
@@ -47,6 +47,35 @@ def sf_protocol(eta, var, keylen, V):
         result = eng.run(prog)
         bob_bitstr[i]= result.samples[0][0]
         eng.reset()
+
+    return alice_bitstr, bob_bitstr, base
+
+#=========================================================================================================
+#                        PROTOCOL 
+#=========================================================================================================
+
+def protocol(eta, var_a, keylen, V):
+
+    alpha_q = np.random.normal(loc=0, scale=np.sqrt(var_a), size=keylen)
+    alpha_p = np.random.normal(loc=0, scale=np.sqrt(var_a), size=keylen)
+    base = np.random.randint(0, 2, size=keylen)
+    bob_bitstr = np.zeros(keylen)
+    alice_bitstr = np.zeros(keylen)
+    
+    noise_q = np.sqrt(eta*V+(1-eta))
+    noise_p = np.sqrt(eta/V+(1-eta))
+
+    for i, choice in enumerate(base):
+
+        if choice == 0:  
+
+            bob_bitstr[i] = np.random.normal(loc=np.sqrt(eta)*alpha_q[i], scale=noise_q)
+            alice_bitstr[i] = alpha_q[i]
+
+        elif choice == 1:   
+
+            bob_bitstr[i] = np.random.normal(loc=np.sqrt(eta)*alpha_p[i], scale=noise_p)
+            alice_bitstr[i] = alpha_p[i]
 
     return alice_bitstr, bob_bitstr, base
 
@@ -75,7 +104,7 @@ def MC_I_AB(var_a_grid, eta, keylen, V):
     I_grid_p = np.zeros((size))
 
     for i,var_a in enumerate(var_a_grid):
-        alice_bitstr, bob_bitstr, base = sf_protocol(eta, var_a, keylen, V)
+        alice_bitstr, bob_bitstr, base = protocol(eta, var_a, keylen, V)
         alice_bitstr_x = bitstr_to_base(alice_bitstr, base, 0)
         bob_bitstr_x = bitstr_to_base(bob_bitstr, base, 0)
 
@@ -91,7 +120,7 @@ def MC_I_AB(var_a_grid, eta, keylen, V):
         I_grid[i] = 0.5*(I_AB_x+ I_AB_p)
         I_grid_x[i] = I_AB_x
         I_grid_p[i] = I_AB_p
-
+        
     return I_grid, I_grid_x, I_grid_p
 
 
@@ -103,7 +132,7 @@ def get_mutual_information_MC(var_a_grid, V_grid, eta_grid, keylen):
         for i,v in enumerate(V_grid):
             I, I_x, I_p = MC_I_AB(var_a_grid, eta, keylen, v)
             I_grid_x[:,i] = I_x
-            
+            print(f"\rProgress: {i+1}/{len(V_grid)}", end="", flush=True)
         Ix_per_eta_dict_MC[f'eta_{eta}'] = I_grid_x
         print(f"\rProgress: {j+1}/{len(eta_grid)}", end="", flush=True)
     return Ix_per_eta_dict_MC
@@ -398,54 +427,65 @@ def plot_I_chi(eta,  V_grid, var_a_grid, I_per_eta_dict_th, chix_per_eta_dict, I
 
     fig = go.Figure()
     V_mesh, var_a_mesh = np.meshgrid(V_grid, var_a_grid)
-    #fig.add_trace(go.Scatter3d(x=V_mesh.ravel(), y=var_a_mesh.ravel(), z=I_grid_x_RR.ravel(), mode='markers', marker=dict(size=3, color='blue')))
+
+    if MC:
+        fig.add_trace(go.Scatter3d(x=V_mesh.ravel(), y=var_a_mesh.ravel(), z=I_grid_x.ravel(), mode='markers', marker=dict(size=3, color='blue')))
     fig.add_trace(go.Surface(x=V_grid, y=var_a_grid, z=th_I_grid_x_RR, surfacecolor=np.zeros_like(th_I_grid_x_RR), colorscale=[[0.0, 'magenta'], [1.0, 'blue']], showscale=False))
-
     fig.add_trace(go.Surface(x=V_grid, y=var_a_grid, z=th_chi_x_grid, surfacecolor=np.zeros_like(th_chi_x_grid), colorscale=[[0.0, 'red'], [1.0, 'red']], showscale=False))
-
     fig.update_layout(scene=dict(xaxis_title="V", yaxis_title=r"var_a", zaxis = dict(title="Info"), aspectmode ="cube"), width=900, height=750)
-
     fig.show()
 
 
-def plot_K(b, eta, var_a_grid, V_grid, I_per_eta_dict_th, chix_per_eta_dict):
+def plot_K(b, eta, var_a_grid, V_grid, I_per_eta_dict_th, I_per_eta_dict_MC, chix_per_eta_dict, MC=False):
 
     th_I_grid_x = I_per_eta_dict_th[f'eta_{eta}']
+    if MC:
+        I_grid_x = I_per_eta_dict_MC[f'eta_{eta}']
+        K = key_rate(b, I_grid_x, th_chi_x_grid)
     th_chi_x_grid = chix_per_eta_dict[f'eta_{eta}']
 
-    K = key_rate(b, th_I_grid_x, th_chi_x_grid)
+    th_K = key_rate(b, th_I_grid_x, th_chi_x_grid)
+    
+
     fig = go.Figure()
-
-    var_a_mesh, V_mesh = np.meshgrid(var_a_grid, V_grid)
-
-    fig.add_trace(go.Surface(x=V_grid, y=var_a_grid, z= K))
+    V_mesh, var_a_mesh = np.meshgrid(V_grid, var_a_grid)
+    fig.add_trace(go.Surface(x=V_grid, y=var_a_grid, z= th_K))
     fig.add_trace(go.Surface(x=V_grid, y=var_a_grid, z=np.zeros((len(var_a_grid), len(V_grid)))))
-
+    if MC:
+        fig.add_trace(go.Scatter3d(x=V_mesh.ravel(), y=var_a_mesh.ravel(), z=K.ravel(), mode='markers', marker=dict(size=3, color='blue')))
     fig.update_layout(scene=dict(xaxis_title="V", yaxis_title="var_a", zaxis = dict(title="K"), aspectmode ="cube"), width=900, height=750)
     fig.show()
 
 
-def plot_2D_chi_I_K(b, eta, V, var_a_grid, V_grid, I_per_eta_dict_th, chix_per_eta_dict):
+def plot_2D_chi_I_K(b, eta, V, var_a_grid, V_grid, I_per_eta_dict_th, I_per_eta_dict_MC, chix_per_eta_dict, MC=False):
 
     th_I_grid_x = I_per_eta_dict_th[f'eta_{eta}']
+    I_grid_x = I_per_eta_dict_MC[f'eta_{eta}']
     th_chi_x_grid = chix_per_eta_dict[f'eta_{eta}']
 
     idx = np.where(V_grid==V)[0][0]
     th_I_x = (th_I_grid_x[:, idx])
     th_chi_x = (th_chi_x_grid[:, idx])
+    
     th_K = key_rate(b, th_I_x, th_chi_x)
+
+    if MC:
+        I_grid_x = (I_grid_x[:, idx])
+        K = key_rate(b, I_grid_x, th_chi_x)
 
     fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(10, 8), dpi=100)
 
     ax[0].set_title(rf'$\beta$={b}, V={V} and $\eta$={eta}', fontsize=15)
-    #ax[0].scatter(var_a_grid, I_x, s=15, color = 'magenta')
+    if MC:
+        ax[0].scatter(var_a_grid, I_grid_x, s=15, color = 'magenta')
     ax[0].plot(var_a_grid, th_I_x, '--', color='magenta', label=r'$I_{AB}$')
     ax[0].plot(var_a_grid, th_chi_x, 'b--', label=r'$\chi_{BE}$')
     ax[0].set_ylabel(r'Information', fontsize=15)
     ax[0].legend(fontsize=15)
 
     ax[1].plot(var_a_grid, th_K, '--r', label = f'Key-Rate')
-    #ax[1].scatter(var_a_grid, qsf.key_rate(b, I_x, th_chi_x), s=15, color = 'red', label = f'MC Key-Rate')
+    if MC:
+        ax[1].scatter(var_a_grid, K, s=15, color = 'red', label = f'MC Key-Rate')
     ax[1].axhline(0)
     ax[1].set_xlabel(r'$Var_{{\alpha}}$', fontsize=15)
     ax[1].set_ylim(0)
