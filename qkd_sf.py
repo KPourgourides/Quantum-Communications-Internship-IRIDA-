@@ -439,14 +439,13 @@ def plot_I_chi(eta,  V_grid, var_a_grid, I_per_eta_dict_th, chix_per_eta_dict, I
 def plot_K(b, eta, var_a_grid, V_grid, I_per_eta_dict_th, I_per_eta_dict_MC, chix_per_eta_dict, MC=False):
 
     th_I_grid_x = I_per_eta_dict_th[f'eta_{eta}']
+    th_chi_x_grid = chix_per_eta_dict[f'eta_{eta}']
+    th_K = key_rate(b, th_I_grid_x, th_chi_x_grid)
+
     if MC:
         I_grid_x = I_per_eta_dict_MC[f'eta_{eta}']
         K = key_rate(b, I_grid_x, th_chi_x_grid)
-    th_chi_x_grid = chix_per_eta_dict[f'eta_{eta}']
-
-    th_K = key_rate(b, th_I_grid_x, th_chi_x_grid)
     
-
     fig = go.Figure()
     V_mesh, var_a_mesh = np.meshgrid(V_grid, var_a_grid)
     fig.add_trace(go.Surface(x=V_grid, y=var_a_grid, z= th_K))
