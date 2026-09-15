@@ -391,7 +391,8 @@ def b_th(I_per_eta_dict_th, chix_per_eta_dict, eta_grid):
         for b in bs:
             K_grid = key_rate(b, th_I_grid_x, th_chi_x_grid)
             max_value = np.nanmax(K_grid)
-            if max_value>=1e-3:
+            # we search for the max value above a threshold>0 since the negative keyrate curves also start at 0
+            if max_value>=1e-3: 
                 low_b[i]=b
                 break
     return low_b
@@ -511,7 +512,7 @@ def plot_2D_chi_I_K(b, eta, V, var_a_grid, V_grid, I_per_eta_dict_th, I_per_eta_
     if MC:
         ax[0].scatter(var_a_grid, I_grid_x, s=15, color = 'magenta')
     ax[0].plot(var_a_grid, th_I_x, '--', color='magenta', label=r'$I_{AB}$')
-    ax[0].plot(var_a_grid, th_chi_x, 'b--', label=r'$\chi_{BE}$')
+    ax[0].plot(var_a_grid, th_chi_x, 'b--', label=r'$\chi$')
     ax[0].set_ylabel(r'Information', fontsize=15)
     ax[0].legend(fontsize=15)
 
@@ -526,18 +527,24 @@ def plot_2D_chi_I_K(b, eta, V, var_a_grid, V_grid, I_per_eta_dict_th, I_per_eta_
     plt.tight_layout()
 
 
-def plot_K_regions(eta_grid, I_per_eta_dict_th, chix_per_eta_dict):
-
+def plot_K_regions(eta_grid, I_per_eta_dict_th, I_per_eta_dict_MC, chix_per_eta_dict):
+    fig = plt.figure(figsize=(8, 5), dpi=100)
     low_b = b_th(I_per_eta_dict_th, chix_per_eta_dict, eta_grid)
+    low_b_MC = b_th(I_per_eta_dict_MC, chix_per_eta_dict, eta_grid)
     low_b_cs = cs_b_th(I_per_eta_dict_th, chix_per_eta_dict, eta_grid)
+    low_b_cs_MC = cs_b_th(I_per_eta_dict_MC, chix_per_eta_dict, eta_grid)
 
     plt.plot(eta_grid, low_b, '--', color='k', linewidth=2)
+    plt.plot(eta_grid, low_b_MC, 'o', color='k')
     plt.plot(eta_grid, low_b_cs, '--', color='k', linewidth=2)
-    plt.fill_between(eta_grid, low_b, low_b_cs, color='gold', alpha=0.6)
-    plt.fill_between(eta_grid, low_b_cs, 1, color='green', alpha=0.6)
-    plt.fill_between(eta_grid, low_b, 0, color='red', alpha=0.6)
-    plt.xlabel(r'$\eta$')
-    plt.ylabel(r'$b_{th}$')
+    plt.plot(eta_grid, low_b_cs_MC, 'o', color='k')
+    plt.fill_between(eta_grid, low_b, low_b_cs, color='gold', alpha=0.6, label='Squeezing Necessary')
+    plt.fill_between(eta_grid, low_b_cs, 1, color='green', alpha=0.6, label='Squeezing Beneficial')
+    plt.fill_between(eta_grid, low_b, 0, color='red', alpha=0.6, label='Squeezing not Beneficial')
+    plt.xlabel(r'$\eta$', fontsize=15)
+    plt.ylabel(r'$b_{th}$', fontsize=15)
+    plt.legend(fontsize=15)
+    plt.savefig('Kregions.pdf')
 
 
 def plot_opt(b, eta, var_a_grid, V_grid, I_per_eta_dict_th, chix_per_eta_dict):
