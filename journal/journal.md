@@ -432,7 +432,7 @@ Alice prepares coherent states whose phase and amplitude quadratures are modulat
 
 ### Started implementing coherent-state QKD protocol in noise-free channel
 
-The protocol has been implemented using Strawberry Fields (SF). Alice samples from a  Gaussian two values ($a_p, a_x$) and uses them to modulate the phase and amplitude quadratures of the coherent state, respectively. Bob measures randomly one of the two quadratures using homodyne detection and Alice retains only the corresponding modulation values for the key generation.
+The protocol has been implemented using Strawberry Fields (SF). Alice samples from a Gaussian distribution two values ($a_p, a_x$) and uses them to modulate the phase and amplitude quadratures of the coherent state, respectively. Bob measures randomly one of the two quadratures using homodyne detection and Alice retains only the corresponding modulation values for the key generation.
 
 ***
 
@@ -445,6 +445,150 @@ $$K=I_{AB}*b-\chi_E$$
 
 ## Next steps:
 - Calculate the Holevo bound for RR and DR in noise-free coherent-state channel
-
 - Calculate the mutual information between Alice and Bob and the Holevo bound for RR and DR in the noise-free displaced-squeezed-state channel 
+
+
+## Week 10 Overview (September 3--9)
+
+- CS QKD protocol
+  - Calculated the Holevo bound for RR and DR
+  - Calculated the lower bound of the secret key rate (SKR)
+  - Compared the SKR results with the literature
+
+- DSS QKD protocol
+  - Implemented the protocol
+  - Calculated the mutual information $I_{AB}$ between Alice and Bob
+
+***
+
+## CS QKD protocol
+
+***
+
+### Calculated the Holevo bound for RR and DR
+
+The Holevo bound depends on the von Neumann entropy, which can be expressed in terms of the bosonic entropy function
+
+$$
+G(\nu)=
+\frac{\nu+1}{2}
+\log_2\left(\frac{\nu+1}{2}\right)
+-
+\frac{\nu-1}{2}
+\log_2\left(\frac{\nu-1}{2}\right),
+$$
+
+where $\nu$ is the symplectic eigenvalue of the corresponding covariance matrix. The covariance matrix of Bob and Eve is obtained from SF and accounts for the quantum quadrature variances. The classical modulation variance $V_\alpha$ is subsequently added to the covariance matrix to account for the Gaussian modulation.
+
+The Holevo bound was then calculated separately for DR and RR using the corresponding conditional covariance matrices.
+
+***
+
+### Calculated the SKR of DR/RR
+
+The lower bound of the SKR for DR and RR was calculated using
+
+$$
+K=\beta I_{AB}-\chi_E,
+$$
+
+where $\beta$ is the reconciliation efficiency, $I_{AB}$ is the mutual information between Alice and Bob, and $\chi_E$ is the corresponding Holevo bound. Specifically, $\chi_E=\chi_{AE}$ for DR and $\chi_E=\chi_{BE}$ for RR.
+
+A negative value of the lower bound of the SKR indicates that no positive secret key rate can be guaranteed for the considered protocol channel parameters and the channel is not secure. As expected, the SKR increases with increasing channel transmission $\eta$ and reconciliation efficiency $\beta$.
+
+***
+
+### Compared results of SKR to literature for DR/RR
+
+The calculated results were compared with those reported in the reference paper (Fig. 2) and showed excellent agreement. One important observation is that the SKR exhibits a maximum as a function of the modulation variance, indicating that the modulation variance should be optimized to maximize the SKR.
+
+Additionally, RR appears to tolerate lower channel transmissions than DR, making it more robust against channel loss.
+
+***
+
+## DSS QKD protocol
+
+***
+
+### Implemented the protocol
+
+Alice randomly chooses either the $x$ or $p$ quadrature to squeeze and then samples the displacement of each quadrature from a Gaussian distribution with variance $V_\alpha$. Bob randomly chooses one of the two quadratures and measures it using homodyne detection. Alice and Bob then publicly announce which quadrature was squeezed and which quadrature was measured, and retain only the values for which the two choices coincide.
+
+To simplify the simulated protocol and reduce the number of discarded runs, we fix the squeezing choice to the amplitude quadrature, as in the reference paper, without loss of generality. This is possible because the modulation values for the two quadratures are sampled from the same Gaussian distribution, making the protocol symmetric with respect to the choice of quadrature.
+
+***
+
+### Calculated the mutual information $I_{AB}$ between Alice and Bob
+
+Using the retained values of Alice's modulation and Bob's homodyne measurements, we calculate the mutual information $I_{AB}$ in the presence of squeezing. The results show that squeezing enhances the mutual information, as the quantum fluctuations in the squeezed quadrature are reduced, resulting in a higher signal-to-noise ratio and making Alice's modulation more distinguishable at Bob's detector.
+
+
+## Week 11 Overview (September 9 - 16)
+
+- DSS QKD protocol
+  - Calculated the Holevo bound for RR and DR in the DSS channel
+  - Calculated the lower bound of the SKR for the DSS channel
+  - Compared the SKR results with the literature
+
+- CS & DSS
+  - Found the threshold value of reconciliation efficiency $b_{th}$ for DR/RR
+  - Compared the CS and DSS results
+
+***
+
+## DSS QKD protocol
+
+***
+
+### Calculated the Holevo bound for RR and DR in the DSS channel
+
+The Holevo bound for the DSS protocol was calculated for both DR and RR. The same approach used for the CS protocol was applied, with the covariance matrices constructed according to the DSS protocol.
+
+***
+
+### Calculated the SKR for the DSS channel
+
+The SKR was evaluated for different channel transmissions, modulation variances, and squeezing levels. 
+
+***
+
+### Compared results of SKR to literature
+
+The calculated SKR results for the DSS protocol were compared with the results reported in the reference paper. The results showed excellent agreement.
+
+In particular, squeezing was found to be a useful resource since  it seems to increase the SKR in some cases.
+
+***
+
+## CS & DSS
+
+***
+
+### Found the threshold value of reconciliation efficiency $b_{th}$ for DR/RR
+
+The threshold reconciliation efficiency was calculated to determine the minimum reconciliation efficiency required for the lower bound of the secret key rate to become positive, as a function of $\eta$. Starting from
+
+$$
+K=b I_{AB}-\chi_E,
+$$
+
+the threshold is obtained by setting $K=0$, giving
+
+$$
+b_{th}=\frac{\chi_E}{I_{AB}}.
+$$
+
+The threshold values were calculated separately for DR and RR and compared between the CS and DSS protocols.
+
+***
+
+### Compared CS and DSS results
+
+The threshold reconciliation efficiencies for the CS and DSS protocols were compared for both DR and RR. This comparison  provided the useful insight that there are regions where squeezing increases the secret key rate, regions where squeezing is necessary in order to have a positive SKR, and regions where squeezing is not beneficial. 
+
+## Next steps:
+
+- Organize codes and prepare results in the desired format
+- Start report writing for the second part of the project
+- Prepare final presentation
 
