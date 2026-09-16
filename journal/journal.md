@@ -484,12 +484,12 @@ The Holevo bound was then calculated separately for DR and RR using the correspo
 The lower bound of the SKR for DR and RR was calculated using
 
 $$
-K=\beta I_{AB}-\chi_E,
+K=b I_{AB}-\chi_E,
 $$
 
-where $\beta$ is the reconciliation efficiency, $I_{AB}$ is the mutual information between Alice and Bob, and $\chi_E$ is the corresponding Holevo bound. Specifically, $\chi_E=\chi_{AE}$ for DR and $\chi_E=\chi_{BE}$ for RR.
+where $b$ is the reconciliation efficiency, $I_{AB}$ is the mutual information between Alice and Bob, and $\chi_E$ is the corresponding Holevo bound. Specifically, $\chi_E=\chi_{AE}$ for DR and $\chi_E=\chi_{BE}$ for RR.
 
-A negative value of the lower bound of the SKR indicates that no positive SKR can be guaranteed for the considered protocol channel parameters and the channel is not secure. As expected, the SKR increases with increasing channel transmission $\eta$ and reconciliation efficiency $\beta$.
+A negative value of the lower bound of the SKR indicates that no positive SKR can be guaranteed for the considered channel parameters and the channel is not secure. As expected, the SKR increases with increasing channel transmission $\eta$ and reconciliation efficiency $\beta$.
 
 ***
 
@@ -515,7 +515,7 @@ To simplify the simulated protocol and reduce the number of discarded runs, we f
 
 ### Calculated the mutual information $I_{AB}$ between Alice and Bob
 
-Using the retained values of Alice's modulation and Bob's homodyne measurements, we calculate the mutual information $I_{AB}$ in the presence of squeezing. The results show that squeezing enhances the mutual information, as the quantum fluctuations in the squeezed quadrature are reduced, resulting in a higher signal-to-noise ratio and making Alice's modulation more distinguishable at Bob's detector.
+Using the retained values of Alice's modulation and Bob's homodyne measurements, we calculate the mutual information $I_{AB}$ in the presence of squeezing. The results show that squeezing enhances the mutual information, as the quantum fluctuations in the squeezed quadrature are reduced, making Alice's modulation more distinguishable at Bob's detector.
 
 
 ## Week 11 Overview (September 9 - 16)
@@ -556,14 +556,16 @@ In particular, squeezing was found to be a useful resource since  it seems to in
 
 ### Found the threshold value of reconciliation efficiency $b_{th}$ for DR/RR
 
-The threshold reconciliation efficiency was calculated to determine the minimum reconciliation efficiency required for the lower bound of the SKR to become positive (beyond a threshold), as a function of $\eta$.
-The threshold values were calculated separately for DR and RR and compared between the CS and DSS protocols. This comparison  provided the useful insight that there are regions where squeezing increases the SKR, regions where squeezing is necessary in order to have a positive SKR, and regions where squeezing is not beneficial. 
+The threshold reconciliation efficiency was calculated to determine the minimum value of $b$ required to obtain a positive lower bound of the SKR for each value of $\eta$.
+
+The threshold values were calculated separately for DR and RR and compared between the CS and DSS protocols. This comparison identifies the regions where squeezing improves the SKR, is necessary to obtain a positive SKR, or provides no benefit.
+ 
 
 ***
 
 ### Developed code that produces MC data without SF 
  
-Since SF was time-consuming for generating MC data, I developed another protocol without SF that is faster. SF is a useful tool for initially understanding the underlying processes, as it provides a more intuitive way of implementing the protocol. However, once the underlying concepts are understood and the corresponding mathematics has been developed, other approaches can be used to generate the MC data more efficiently.
+Since SF was time-consuming for generating MC data, another protocol without SF was developed that is faster. SF is a useful tool for initially understanding the underlying processes, as it provides a more intuitive way of implementing the protocol. However, once the underlying concepts are understood, other approaches can be used to generate the MC data more efficiently.
 
 
 ## Next steps:
