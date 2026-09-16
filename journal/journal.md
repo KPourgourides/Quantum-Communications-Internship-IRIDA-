@@ -426,7 +426,7 @@ Many papers were studied during this period to make an informed choice on the pr
 From the different research directions considered above, the investigation of the potential advantage of squeezing in QKD protocols was particularly interesting for me. Since the previous part of the project focused on investigating squeezing in the BPSK protocol, it was considered valuable to extend the investigation to CV QKD. I proposed my idea to the team and, following discussion with my supervisor, it was agreed to proceed with this research direction. The main reference that inspired this idea is Squeezed-state quantum key distribution upon imperfect reconciliation by Vladyslav C. Usenko and Radim Filip [2011, New Journal of Physics 13, 113007](https://iopscience.iop.org/article/10.1088/1367-2630/13/11/113007/pdf).
 
 The idea behind the protocol is:\
-Alice prepares coherent states whose phase and amplitude quadratures are modulated according to Gaussian distributions. Bob randomly chooses one of the two quadratures and measures it using homodyne detection. He then publicly announces which quadrature was measured, allowing Alice to retain only the corresponding modulation values for the key generation process. Alice and Bob subsequently perform either direct reconciliation (DR) or reverse reconciliation (RR). In DR, Bob performs error correction using Alice's data as the reference, whereas in RR, Alice performs error correction using Bob's data as the reference. The reconciliation efficiency, denoted by $b$, quantifies how close the reconciliation procedure is to the ideal case, with $b=1$ corresponding to perfect reconciliation and $b<1$ to imperfect reconciliation. Assuming that an eavesdropper, Eve, can access the channel through a beamsplitter attack, the maximum amount of information available to Eve can be quantified using the Holevo bound, $\chi_E$. The objective is then to calculate the lower bound of the secret key rate (SKR), which quantifies the rate at which Alice and Bob can generate a secure key while limiting Eve's information about it. The main goal of this investigation is to compare the SKR in the presence and absence of squeezing and determine whether squeezing can provide an advantage as a resource in CV-QKD protocols.
+Alice prepares coherent states whose phase and amplitude quadratures are modulated according to Gaussian distributions. Bob randomly chooses one of the two quadratures and measures it using homodyne detection. He then publicly announces which quadrature was measured, allowing Alice to retain only the corresponding modulation values for the key generation process. Alice and Bob subsequently perform either direct reconciliation (DR) or reverse reconciliation (RR). In DR, Bob performs error correction using Alice's data as the reference, whereas in RR, Alice performs error correction using Bob's data as the reference. The reconciliation efficiency, denoted by $b$, quantifies how close the reconciliation procedure is to the ideal case, with $b=1$ corresponding to perfect reconciliation and $b<1$ to imperfect reconciliation. Assuming that an eavesdropper, Eve, can access the channel through a beamsplitter attack, the maximum amount of information available to Eve can be quantified using the Holevo bound, $\chi_E$. The objective is then to calculate the lower bound of the secure key rate (SKR), which quantifies the rate at which Alice and Bob can generate a secure key while limiting Eve's information about it. The main goal of this investigation is to compare the SKR in the presence and absence of squeezing and determine whether squeezing can provide an advantage as a resource in CV-QKD protocols.
 
 ***
 
@@ -448,11 +448,11 @@ $$K=I_{AB}*b-\chi_E$$
 - Calculate the mutual information between Alice and Bob and the Holevo bound for RR and DR in the noise-free displaced-squeezed-state channel 
 
 
-## Week 10 Overview (September 3--9)
+## Week 10 Overview (September 3 - 9)
 
 - CS QKD protocol
   - Calculated the Holevo bound for RR and DR
-  - Calculated the lower bound of the secret key rate (SKR)
+  - Calculated the lower bound of the secure key rate (SKR)
   - Compared the SKR results with the literature
 
 - DSS QKD protocol
@@ -470,12 +470,7 @@ $$K=I_{AB}*b-\chi_E$$
 The Holevo bound depends on the von Neumann entropy, which can be expressed in terms of the bosonic entropy function
 
 $$
-G(\nu)=
-\frac{\nu+1}{2}
-\log_2\left(\frac{\nu+1}{2}\right)
--
-\frac{\nu-1}{2}
-\log_2\left(\frac{\nu-1}{2}\right),
+G(\nu)=\frac{\nu+1}{2}\log_2\left(\frac{\nu+1}{2}\right)-\frac{\nu-1}{2}\log_2\left(\frac{\nu-1}{2}\right),
 $$
 
 where $\nu$ is the symplectic eigenvalue of the corresponding covariance matrix. The covariance matrix of Bob and Eve is obtained from SF and accounts for the quantum quadrature variances. The classical modulation variance $V_\alpha$ is subsequently added to the covariance matrix to account for the Gaussian modulation.
@@ -494,7 +489,7 @@ $$
 
 where $\beta$ is the reconciliation efficiency, $I_{AB}$ is the mutual information between Alice and Bob, and $\chi_E$ is the corresponding Holevo bound. Specifically, $\chi_E=\chi_{AE}$ for DR and $\chi_E=\chi_{BE}$ for RR.
 
-A negative value of the lower bound of the SKR indicates that no positive secret key rate can be guaranteed for the considered protocol channel parameters and the channel is not secure. As expected, the SKR increases with increasing channel transmission $\eta$ and reconciliation efficiency $\beta$.
+A negative value of the lower bound of the SKR indicates that no positive SKR can be guaranteed for the considered protocol channel parameters and the channel is not secure. As expected, the SKR increases with increasing channel transmission $\eta$ and reconciliation efficiency $\beta$.
 
 ***
 
@@ -527,12 +522,12 @@ Using the retained values of Alice's modulation and Bob's homodyne measurements,
 
 - DSS QKD protocol
   - Calculated the Holevo bound for RR and DR in the DSS channel
-  - Calculated the lower bound of the SKR for the DSS channel
-  - Compared the SKR results with the literature
+  - Calculated the lower bound of the SKR for the DSS channel and compared the results to literature
 
 - CS & DSS
   - Found the threshold value of reconciliation efficiency $b_{th}$ for DR/RR
   - Compared the CS and DSS results
+  - Developed code that produces MC data without SF 
 
 ***
 
@@ -546,17 +541,12 @@ The Holevo bound for the DSS protocol was calculated for both DR and RR. The sam
 
 ***
 
-### Calculated the SKR for the DSS channel
+### Calculated the SKR for the DSS channel and compared results to literature
 
-The SKR was evaluated for different channel transmissions, modulation variances, and squeezing levels. 
-
-***
-
-### Compared results of SKR to literature
-
-The calculated SKR results for the DSS protocol were compared with the results reported in the reference paper. The results showed excellent agreement.
+The SKR was evaluated for different channel transmissions, modulation variances, and squeezing levels. The results were compared with the results reported in the reference paper and showed excellent agreement.
 
 In particular, squeezing was found to be a useful resource since  it seems to increase the SKR in some cases.
+
 
 ***
 
@@ -566,29 +556,19 @@ In particular, squeezing was found to be a useful resource since  it seems to in
 
 ### Found the threshold value of reconciliation efficiency $b_{th}$ for DR/RR
 
-The threshold reconciliation efficiency was calculated to determine the minimum reconciliation efficiency required for the lower bound of the secret key rate to become positive, as a function of $\eta$. Starting from
-
-$$
-K=b I_{AB}-\chi_E,
-$$
-
-the threshold is obtained by setting $K=0$, giving
-
-$$
-b_{th}=\frac{\chi_E}{I_{AB}}.
-$$
-
-The threshold values were calculated separately for DR and RR and compared between the CS and DSS protocols.
+The threshold reconciliation efficiency was calculated to determine the minimum reconciliation efficiency required for the lower bound of the SKR to become positive (beyond a threshold), as a function of $\eta$.
+The threshold values were calculated separately for DR and RR and compared between the CS and DSS protocols. This comparison  provided the useful insight that there are regions where squeezing increases the SKR, regions where squeezing is necessary in order to have a positive SKR, and regions where squeezing is not beneficial. 
 
 ***
 
-### Compared CS and DSS results
+### Developed code that produces MC data without SF 
+ 
+Since SF was time-consuming for generating MC data, I developed another protocol without SF that is faster. SF is a useful tool for initially understanding the underlying processes, as it provides a more intuitive way of implementing the protocol. However, once the underlying concepts are understood and the corresponding mathematics has been developed, other approaches can be used to generate the MC data more efficiently.
 
-The threshold reconciliation efficiencies for the CS and DSS protocols were compared for both DR and RR. This comparison  provided the useful insight that there are regions where squeezing increases the secret key rate, regions where squeezing is necessary in order to have a positive SKR, and regions where squeezing is not beneficial. 
 
 ## Next steps:
 
-- Organize codes and prepare results in the desired format
-- Start report writing for the second part of the project
-- Prepare final presentation
+- Organize/Optimize codes and prepare results in desired format
+- Report writing for the second part of the project
+- Final presentation for the second part of the project
 
