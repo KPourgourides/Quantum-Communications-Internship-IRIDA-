@@ -451,9 +451,9 @@ $$K=I_{AB}*b-\chi_E$$
 ## Week 10 Overview (September 3 - 9)
 
 - CS QKD protocol
-  - Calculated the Holevo bound for RR and DR
-  - Calculated the lower bound of the secure key rate (SKR)
-  - Compared the SKR results with the literature
+  - Calculated the Holevo bound for DR/RR
+  - Calculated the lower bound of the secure key rate (SKR) for DR/RR
+  - Compared results of SKR to literature for DR/RR
 
 - DSS QKD protocol
   - Implemented the protocol
@@ -465,7 +465,7 @@ $$K=I_{AB}*b-\chi_E$$
 
 ***
 
-### Calculated the Holevo bound for RR and DR
+### Calculated the Holevo bound for DR/RR
 
 The Holevo bound depends on the von Neumann entropy, which can be expressed in terms of the bosonic entropy function
 
@@ -479,7 +479,7 @@ The Holevo bound was then calculated separately for DR and RR using the correspo
 
 ***
 
-### Calculated the SKR of DR/RR
+### Calculated the lower bound of the secure key rate (SKR) for DR/RR
 
 The lower bound of the SKR for DR and RR was calculated using
 
@@ -489,7 +489,7 @@ $$
 
 where $b$ is the reconciliation efficiency, $I_{AB}$ is the mutual information between Alice and Bob, and $\chi_E$ is the corresponding Holevo bound. Specifically, $\chi_E=\chi_{AE}$ for DR and $\chi_E=\chi_{BE}$ for RR.
 
-A negative value of the lower bound of the SKR indicates that no positive SKR can be guaranteed for the considered channel parameters and the channel is not secure. As expected, the SKR increases with increasing channel transmission $\eta$ and reconciliation efficiency $\beta$.
+A negative value of the lower bound of the SKR indicates that no positive SKR can be guaranteed for the considered channel parameters and the channel is not secure. As expected, the SKR increases with increasing channel transmission $\eta$ and reconciliation efficiency $b$.
 
 ***
 
@@ -521,12 +521,11 @@ Using the retained values of Alice's modulation and Bob's homodyne measurements,
 ## Week 11 Overview (September 9 - 16)
 
 - DSS QKD protocol
-  - Calculated the Holevo bound for RR and DR in the DSS channel
-  - Calculated the lower bound of the SKR for the DSS channel and compared the results to literature
+  - Calculated the Holevo bound for DR/RR 
+  - Calculated the lower bound of the SKR for DR/RR and compared the results to literature
 
 - CS & DSS
   - Found the threshold value of reconciliation efficiency $b_{th}$ for DR/RR
-  - Compared the CS and DSS results
   - Developed code that produces MC data without SF 
 
 ***
@@ -535,13 +534,13 @@ Using the retained values of Alice's modulation and Bob's homodyne measurements,
 
 ***
 
-### Calculated the Holevo bound for RR and DR in the DSS channel
+### Calculated the Holevo bound for DR/RR 
 
 The Holevo bound for the DSS protocol was calculated for both DR and RR. The same approach used for the CS protocol was applied, with the covariance matrices constructed according to the DSS protocol.
 
 ***
 
-### Calculated the SKR for the DSS channel and compared results to literature
+### Calculated the lower bound of the SKR for DR/RR and compared the results to literature
 
 The SKR was evaluated for different channel transmissions, modulation variances, and squeezing levels. The results were compared with the results reported in the reference paper and showed excellent agreement.
 
