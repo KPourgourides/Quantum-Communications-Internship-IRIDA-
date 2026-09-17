@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import strawberryfields as sf
 from strawberryfields.ops import*
 import plotly.graph_objects as go
-
+import matplotlib.colors as mcolors
 
 #=========================================================================================================
 #                        PROTOCOL SF
@@ -148,7 +148,7 @@ def get_mutual_information_th(var_a_grid, V_grid, eta_grid):
             th_I, th_I_x, th_I_p = theoretical_I_AB(var_a_grid, eta, v)
             th_I_grid_x[:,i] = th_I_x
 
-        Ix_per_eta_dict_th[f'eta_{eta}'] = th_I_grid_x
+        Ix_per_eta_dict_th[f'eta_{eta:.2f}'] = th_I_grid_x
         print(f"\rProgress: {j+1}/{len(eta_grid)}", end="", flush=True)
     return Ix_per_eta_dict_th
 
@@ -185,7 +185,7 @@ def get_Holevo_bound(var_a_grid, V_grid, eta_grid, protocol):
                     th_chix_grid[i][j] = holevo_RR_SF(eta, var_a, v, 'x')
                 elif protocol=='DR':
                     th_chix_grid[i][j] = holevo_DR_SF(eta, var_a, v, 'x')
-        chix_per_eta_dict[f'eta_{eta}'] = th_chix_grid
+        chix_per_eta_dict[f'eta_{eta:.2f}'] = th_chix_grid
         print(f"\rProgress: {k+1}/{len(eta_grid)}", end="", flush=True)
 
     return chix_per_eta_dict
@@ -369,8 +369,8 @@ def cs_b_th(I_per_eta_dict_th, chix_per_eta_dict, eta_grid):
     low_b_cs=np.ones((len(eta_grid)))
 
     for i,eta_DR in enumerate(eta_grid):
-        th_I_grid_x = I_per_eta_dict_th[f'eta_{eta_DR}'][:, -1]
-        th_chi_x_grid = chix_per_eta_dict[f'eta_{eta_DR}'][:, -1]
+        th_I_grid_x = I_per_eta_dict_th[f'eta_{eta_DR:.2f}'][:, -1]
+        th_chi_x_grid = chix_per_eta_dict[f'eta_{eta_DR:.2f}'][:, -1]
         for b in bs:
             K_grid = key_rate(b, th_I_grid_x, th_chi_x_grid)
             max_value = np.nanmax(K_grid)
@@ -386,12 +386,13 @@ def b_th(I_per_eta_dict_th, chix_per_eta_dict, eta_grid):
     low_b = np.ones((len(eta_grid)))
 
     for i,eta_DR in enumerate(eta_grid):
-        th_I_grid_x = I_per_eta_dict_th[f'eta_{eta_DR}'][:, :-1]
-        th_chi_x_grid = chix_per_eta_dict[f'eta_{eta_DR}'][:, :-1]
+        th_I_grid_x = I_per_eta_dict_th[f'eta_{eta_DR:.2f}'][:, :-1]
+        th_chi_x_grid = chix_per_eta_dict[f'eta_{eta_DR:.2f}'][:, :-1]
         for b in bs:
             K_grid = key_rate(b, th_I_grid_x, th_chi_x_grid)
             max_value = np.nanmax(K_grid)
-            if max_value>=1e-3:
+            # we search for the max value above a threshold>0 since the negative keyrate curves also start at 0
+            if max_value>=1e-3: 
                 low_b[i]=b
                 break
     return low_b
@@ -416,52 +417,84 @@ def var_a_optimal_data(I, chi, bs, var_a) -> dict:
 #                         PLOTS
 # =========================================================================================================
 
-def plot_I_chi(eta,  V_grid, var_a_grid, I_per_eta_dict_th, chix_per_eta_dict, I_per_eta_dict_MC, MC = 'False'):
-
-    th_I_grid_x_RR = I_per_eta_dict_th[f'eta_{eta}']
-    th_chi_x_grid = chix_per_eta_dict[f'eta_{eta}']
-
-    if MC:
-        print('hi')
-        I_grid_x = I_per_eta_dict_MC[f'eta_{eta}']
-
+def plot_I_chi(eta_plot,  V_grid, var_a_grid, I_per_eta_dict_th, chix_per_eta_dict, I_per_eta_dict_MC, col1, col2, MC = False, show='Holevo Bound'):
     fig = go.Figure()
-    V_mesh, var_a_mesh = np.meshgrid(V_grid, var_a_grid)
+    for i,eta in enumerate(eta_plot):
+        th_I_grid_x = I_per_eta_dict_th[f'eta_{eta:.2f}']
+        th_chi_x_grid = chix_per_eta_dict[f'eta_{eta:.2f}']
+        I_grid_x = I_per_eta_dict_MC[f'eta_{eta:.2f}']
 
-    if MC:
-        fig.add_trace(go.Scatter3d(x=V_mesh.ravel(), y=var_a_mesh.ravel(), z=I_grid_x.ravel(), mode='markers', marker=dict(size=3, color='blue')))
-    fig.add_trace(go.Surface(x=V_grid, y=var_a_grid, z=th_I_grid_x_RR, surfacecolor=np.zeros_like(th_I_grid_x_RR), colorscale=[[0.0, 'magenta'], [1.0, 'blue']], showscale=False))
-    fig.add_trace(go.Surface(x=V_grid, y=var_a_grid, z=th_chi_x_grid, surfacecolor=np.zeros_like(th_chi_x_grid), colorscale=[[0.0, 'red'], [1.0, 'red']], showscale=False))
-    fig.update_layout(scene=dict(xaxis_title="V", yaxis_title=r"var_a", zaxis = dict(title="Info"), aspectmode ="cube"), width=900, height=750)
+        I_th_flat = np.asarray(th_I_grid_x).ravel()
+        I_MC_flat = np.asarray(I_grid_x).ravel()
+
+        SS_res = np.sum((I_MC_flat - I_th_flat) ** 2)
+        SS_tot = np.sum((I_MC_flat - np.mean(I_MC_flat)) ** 2)
+
+        R2 = 1 - SS_res / SS_tot
+
+        print(f"eta = {eta:.2f}    R² = {R2:.6f}")
+
+        
+        V_mesh, var_a_mesh = np.meshgrid(V_grid, var_a_grid)
+
+        if MC and show in ['Mutual Information', 'all']:
+            fig.add_trace(go.Scatter3d(x=V_mesh.ravel(), y=var_a_mesh.ravel(), z=I_grid_x.ravel(), mode='markers', marker=dict(size=3, color=col1[f'eta_{eta:.2f}'])))
+        if show in ['Mutual Information', 'all']:
+            fig.add_trace(go.Surface(x=V_grid, y=var_a_grid, z=th_I_grid_x, surfacecolor=np.zeros_like(th_I_grid_x), colorscale=[[0.0, col2[f'eta_{eta:.2f}']], [1.0, col2[f'eta_{eta:.2f}']]], showscale=False))
+        if show in ['Holevo Bound', 'all']:
+            fig.add_trace(go.Surface(x=V_grid, y=var_a_grid, z=th_chi_x_grid, surfacecolor=np.zeros_like(th_chi_x_grid), colorscale=[[0.0, col2[f'eta_{eta:.2f}']], [1.0, col2[f'eta_{eta:.2f}']]], showscale=False))
+        if show == 'all':
+            show = 'Information'
+        fig.update_layout(scene=dict(xaxis_title="V", yaxis_title=r"V_a", zaxis = dict(title=show), aspectmode ="cube"), width=900, height=750)
     fig.show()
+    cmap(col2)
+
+def cmap(col_dict1):
+
+    eta_colors = []
+    eta_plot = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    for i in range(len(col_dict1)):
+        eta_colors.append(col_dict1[f'eta_{eta_plot[i]:.2f}'])
+
+    fig, ax = plt.subplots(figsize=(12, 2))
+
+    for i, (eta, color) in enumerate(zip(eta_plot, eta_colors)):
+        ax.scatter(i, 0, s=1000, color=color)
+        ax.text(i, -0.25, f"{eta:.1f}", ha="center", va="top", fontsize=14)
+
+    ax.set_xlim(-0.7, 10.7)
+    ax.set_ylim(-0.5, 0.5)
+    ax.axis("off")
+
+    plt.tight_layout()
+    plt.show()
 
 
-def plot_K(b, eta, var_a_grid, V_grid, I_per_eta_dict_th, I_per_eta_dict_MC, chix_per_eta_dict, MC=False):
-
-    th_I_grid_x = I_per_eta_dict_th[f'eta_{eta}']
-    if MC:
-        I_grid_x = I_per_eta_dict_MC[f'eta_{eta}']
-        K = key_rate(b, I_grid_x, th_chi_x_grid)
-    th_chi_x_grid = chix_per_eta_dict[f'eta_{eta}']
-
-    th_K = key_rate(b, th_I_grid_x, th_chi_x_grid)
-    
-
+def plot_K(b, eta_plot, var_a_grid, V_grid, I_per_eta_dict_th, I_per_eta_dict_MC, chix_per_eta_dict, col1, col2, MC=False):
     fig = go.Figure()
-    V_mesh, var_a_mesh = np.meshgrid(V_grid, var_a_grid)
-    fig.add_trace(go.Surface(x=V_grid, y=var_a_grid, z= th_K))
-    fig.add_trace(go.Surface(x=V_grid, y=var_a_grid, z=np.zeros((len(var_a_grid), len(V_grid)))))
-    if MC:
-        fig.add_trace(go.Scatter3d(x=V_mesh.ravel(), y=var_a_mesh.ravel(), z=K.ravel(), mode='markers', marker=dict(size=3, color='blue')))
-    fig.update_layout(scene=dict(xaxis_title="V", yaxis_title="var_a", zaxis = dict(title="K"), aspectmode ="cube"), width=900, height=750)
+    for i,eta in enumerate(eta_plot):
+        th_I_grid_x = I_per_eta_dict_th[f'eta_{eta:.2f}']
+        th_chi_x_grid = chix_per_eta_dict[f'eta_{eta:.2f}']
+        th_K = key_rate(b, th_I_grid_x, th_chi_x_grid)
+
+        if MC:
+            I_grid_x = I_per_eta_dict_MC[f'eta_{eta:.2f}']
+            K = key_rate(b, I_grid_x, th_chi_x_grid)
+        V_mesh, var_a_mesh = np.meshgrid(V_grid, var_a_grid)
+        fig.add_trace(go.Surface(x=V_grid, y=var_a_grid, z= th_K, surfacecolor=np.zeros_like(th_I_grid_x), colorscale=[[0.0, col2[f'eta_{eta:.2f}']], [1.0, col2[f'eta_{eta:.2f}']]], showscale=False))
+        fig.add_trace(go.Surface(x=V_grid, y=var_a_grid, z=np.zeros((len(var_a_grid), len(V_grid))),  colorscale=[[0.0, 'black'], [1.0, 'black']], showscale=False))
+        if MC:
+            fig.add_trace(go.Scatter3d(x=V_mesh.ravel(), y=var_a_mesh.ravel(), z=K.ravel(), mode='markers', marker=dict(size=3, color=col1[f'eta_{eta:.2f}'])))
+        fig.update_layout(scene=dict(xaxis_title="V", yaxis_title="V_a", zaxis = dict(title="K"), aspectmode ="cube"), width=900, height=750)
     fig.show()
+    cmap(col2)
 
 
 def plot_2D_chi_I_K(b, eta, V, var_a_grid, V_grid, I_per_eta_dict_th, I_per_eta_dict_MC, chix_per_eta_dict, MC=False):
 
-    th_I_grid_x = I_per_eta_dict_th[f'eta_{eta}']
-    I_grid_x = I_per_eta_dict_MC[f'eta_{eta}']
-    th_chi_x_grid = chix_per_eta_dict[f'eta_{eta}']
+    th_I_grid_x = I_per_eta_dict_th[f'eta_{eta:.2f}']
+    I_grid_x = I_per_eta_dict_MC[f'eta_{eta:.2f}']
+    th_chi_x_grid = chix_per_eta_dict[f'eta_{eta:.2f}']
 
     idx = np.where(V_grid==V)[0][0]
     th_I_x = (th_I_grid_x[:, idx])
@@ -479,7 +512,7 @@ def plot_2D_chi_I_K(b, eta, V, var_a_grid, V_grid, I_per_eta_dict_th, I_per_eta_
     if MC:
         ax[0].scatter(var_a_grid, I_grid_x, s=15, color = 'magenta')
     ax[0].plot(var_a_grid, th_I_x, '--', color='magenta', label=r'$I_{AB}$')
-    ax[0].plot(var_a_grid, th_chi_x, 'b--', label=r'$\chi_{BE}$')
+    ax[0].plot(var_a_grid, th_chi_x, 'b--', label=r'$\chi$')
     ax[0].set_ylabel(r'Information', fontsize=15)
     ax[0].legend(fontsize=15)
 
@@ -487,25 +520,31 @@ def plot_2D_chi_I_K(b, eta, V, var_a_grid, V_grid, I_per_eta_dict_th, I_per_eta_
     if MC:
         ax[1].scatter(var_a_grid, K, s=15, color = 'red', label = f'MC Key-Rate')
     ax[1].axhline(0)
-    ax[1].set_xlabel(r'$Var_{{\alpha}}$', fontsize=15)
+    ax[1].set_xlabel(r'$V_{{\alpha}}$', fontsize=15)
     ax[1].set_ylim(0)
     ax[1].set_ylabel(r'$K$', fontsize=15)
     plt.grid(True)
     plt.tight_layout()
 
 
-def plot_K_regions(eta_grid, I_per_eta_dict_th, chix_per_eta_dict):
-
+def plot_K_regions(eta_grid, I_per_eta_dict_th, I_per_eta_dict_MC, chix_per_eta_dict):
+    fig = plt.figure(figsize=(8, 5), dpi=100)
     low_b = b_th(I_per_eta_dict_th, chix_per_eta_dict, eta_grid)
+    low_b_MC = b_th(I_per_eta_dict_MC, chix_per_eta_dict, eta_grid)
     low_b_cs = cs_b_th(I_per_eta_dict_th, chix_per_eta_dict, eta_grid)
+    low_b_cs_MC = cs_b_th(I_per_eta_dict_MC, chix_per_eta_dict, eta_grid)
 
     plt.plot(eta_grid, low_b, '--', color='k', linewidth=2)
+    plt.plot(eta_grid, low_b_MC, 'o', color='k')
     plt.plot(eta_grid, low_b_cs, '--', color='k', linewidth=2)
-    plt.fill_between(eta_grid, low_b, low_b_cs, color='gold', alpha=0.6)
-    plt.fill_between(eta_grid, low_b_cs, 1, color='green', alpha=0.6)
-    plt.fill_between(eta_grid, low_b, 0, color='red', alpha=0.6)
-    plt.xlabel(r'$\eta$')
-    plt.ylabel(r'$b_{th}$')
+    plt.plot(eta_grid, low_b_cs_MC, 'o', color='k')
+    plt.fill_between(eta_grid, low_b, low_b_cs, color='gold', alpha=0.6, label='Squeezing Necessary')
+    plt.fill_between(eta_grid, low_b_cs, 1, color='green', alpha=0.6, label='Squeezing Beneficial')
+    plt.fill_between(eta_grid, low_b, 0, color='red', alpha=0.6, label='Squeezing not Beneficial')
+    plt.xlabel(r'$\eta$', fontsize=15)
+    plt.ylabel(r'$b_{th}$', fontsize=15)
+    plt.legend(fontsize=15)
+    plt.savefig('Kregions.pdf')
 
 
 def plot_opt(b, eta, var_a_grid, V_grid, I_per_eta_dict_th, chix_per_eta_dict):

@@ -426,13 +426,13 @@ Many papers were studied during this period to make an informed choice on the pr
 From the different research directions considered above, the investigation of the potential advantage of squeezing in QKD protocols was particularly interesting for me. Since the previous part of the project focused on investigating squeezing in the BPSK protocol, it was considered valuable to extend the investigation to CV QKD. I proposed my idea to the team and, following discussion with my supervisor, it was agreed to proceed with this research direction. The main reference that inspired this idea is Squeezed-state quantum key distribution upon imperfect reconciliation by Vladyslav C. Usenko and Radim Filip [2011, New Journal of Physics 13, 113007](https://iopscience.iop.org/article/10.1088/1367-2630/13/11/113007/pdf).
 
 The idea behind the protocol is:\
-Alice prepares coherent states whose phase and amplitude quadratures are modulated according to Gaussian distributions. Bob randomly chooses one of the two quadratures and measures it using homodyne detection. He then publicly announces which quadrature was measured, allowing Alice to retain only the corresponding modulation values for the key generation process. Alice and Bob subsequently perform either direct reconciliation (DR) or reverse reconciliation (RR). In DR, Bob performs error correction using Alice's data as the reference, whereas in RR, Alice performs error correction using Bob's data as the reference. The reconciliation efficiency, denoted by $b$, quantifies how close the reconciliation procedure is to the ideal case, with $b=1$ corresponding to perfect reconciliation and $b<1$ to imperfect reconciliation. Assuming that an eavesdropper, Eve, can access the channel through a beamsplitter attack, the maximum amount of information available to Eve can be quantified using the Holevo bound, $\chi_E$. The objective is then to calculate the lower bound of the secret key rate (SKR), which quantifies the rate at which Alice and Bob can generate a secure key while limiting Eve's information about it. The main goal of this investigation is to compare the SKR in the presence and absence of squeezing and determine whether squeezing can provide an advantage as a resource in CV-QKD protocols.
+Alice prepares coherent states whose phase and amplitude quadratures are modulated according to Gaussian distributions. Bob randomly chooses one of the two quadratures and measures it using homodyne detection. He then publicly announces which quadrature was measured, allowing Alice to retain only the corresponding modulation values for the key generation process. Alice and Bob subsequently perform either direct reconciliation (DR) or reverse reconciliation (RR). In DR, Bob performs error correction using Alice's data as the reference, whereas in RR, Alice performs error correction using Bob's data as the reference. The reconciliation efficiency, denoted by $b$, quantifies how close the reconciliation procedure is to the ideal case, with $b=1$ corresponding to perfect reconciliation and $b<1$ to imperfect reconciliation. Assuming that an eavesdropper, Eve, can access the channel through a beamsplitter attack, the maximum amount of information available to Eve can be quantified using the Holevo bound, $\chi_E$. The objective is then to calculate the lower bound of the secure key rate (SKR), which quantifies the rate at which Alice and Bob can generate a secure key while limiting Eve's information about it. The main goal of this investigation is to compare the SKR in the presence and absence of squeezing and determine whether squeezing can provide an advantage as a resource in CV-QKD protocols.
 
 ***
 
 ### Started implementing coherent-state QKD protocol in noise-free channel
 
-The protocol has been implemented using Strawberry Fields (SF). Alice samples from a  Gaussian two values ($a_p, a_x$) and uses them to modulate the phase and amplitude quadratures of the coherent state, respectively. Bob measures randomly one of the two quadratures using homodyne detection and Alice retains only the corresponding modulation values for the key generation.
+The protocol has been implemented using Strawberry Fields (SF). Alice samples from a Gaussian distribution two values ($a_p, a_x$) and uses them to modulate the phase and amplitude quadratures of the coherent state, respectively. Bob measures randomly one of the two quadratures using homodyne detection and Alice retains only the corresponding modulation values for the key generation.
 
 ***
 
@@ -445,6 +445,131 @@ $$K=I_{AB}*b-\chi_E$$
 
 ## Next steps:
 - Calculate the Holevo bound for RR and DR in noise-free coherent-state channel
-
 - Calculate the mutual information between Alice and Bob and the Holevo bound for RR and DR in the noise-free displaced-squeezed-state channel 
+
+
+## Week 10 Overview (September 3 - 9)
+
+- CS QKD protocol
+  - Calculated the Holevo bound for DR/RR
+  - Calculated the lower bound of the secure key rate (SKR) for DR/RR
+  - Compared results of SKR to literature for DR/RR
+
+- DSS QKD protocol
+  - Implemented the protocol
+  - Calculated the mutual information $I_{AB}$ between Alice and Bob
+
+***
+
+## CS QKD protocol
+
+***
+
+### Calculated the Holevo bound for DR/RR
+
+The Holevo bound depends on the von Neumann entropy, which can be expressed in terms of the bosonic entropy function
+
+$$
+G(\nu)=\frac{\nu+1}{2}\log_2\left(\frac{\nu+1}{2}\right)-\frac{\nu-1}{2}\log_2\left(\frac{\nu-1}{2}\right),
+$$
+
+where $\nu$ is the symplectic eigenvalue of the corresponding covariance matrix. The covariance matrix of Bob and Eve is obtained from SF and accounts for the quantum quadrature variances. The classical modulation variance $V_\alpha$ is subsequently added to the covariance matrix to account for the Gaussian modulation.
+
+The Holevo bound was then calculated separately for DR and RR using the corresponding conditional covariance matrices.
+
+***
+
+### Calculated the lower bound of the secure key rate (SKR) for DR/RR
+
+The lower bound of the SKR for DR and RR was calculated using
+
+$$
+K=b I_{AB}-\chi_E,
+$$
+
+where $b$ is the reconciliation efficiency, $I_{AB}$ is the mutual information between Alice and Bob, and $\chi_E$ is the corresponding Holevo bound. Specifically, $\chi_E=\chi_{AE}$ for DR and $\chi_E=\chi_{BE}$ for RR.
+
+A negative value of the lower bound of the SKR indicates that no positive SKR can be guaranteed for the considered channel parameters and the channel is not secure. As expected, the SKR increases with increasing channel transmission $\eta$ and reconciliation efficiency $b$.
+
+***
+
+### Compared results of SKR to literature for DR/RR
+
+The calculated results were compared with those reported in the reference paper (Fig. 2) and showed excellent agreement. One important observation is that the SKR exhibits a maximum as a function of the modulation variance, indicating that the modulation variance should be optimized to maximize the SKR.
+
+Additionally, RR appears to tolerate lower channel transmissions than DR, making it more robust against channel loss.
+
+***
+
+## DSS QKD protocol
+
+***
+
+### Implemented the protocol
+
+Alice randomly chooses either the $x$ or $p$ quadrature to squeeze and then samples the displacement of each quadrature from a Gaussian distribution with variance $V_\alpha$. Bob randomly chooses one of the two quadratures and measures it using homodyne detection. Alice and Bob then publicly announce which quadrature was squeezed and which quadrature was measured, and retain only the values for which the two choices coincide.
+
+To simplify the simulated protocol and reduce the number of discarded runs, we fix the squeezing choice to the amplitude quadrature, as in the reference paper, without loss of generality. This is possible because the modulation values for the two quadratures are sampled from the same Gaussian distribution, making the protocol symmetric with respect to the choice of quadrature.
+
+***
+
+### Calculated the mutual information $I_{AB}$ between Alice and Bob
+
+Using the retained values of Alice's modulation and Bob's homodyne measurements, we calculate the mutual information $I_{AB}$ in the presence of squeezing. The results show that squeezing enhances the mutual information, as the quantum fluctuations in the squeezed quadrature are reduced, making Alice's modulation more distinguishable at Bob's detector.
+
+
+## Week 11 Overview (September 9 - 16)
+
+- DSS QKD protocol
+  - Calculated the Holevo bound for DR/RR 
+  - Calculated the lower bound of the SKR for DR/RR and compared the results to literature
+
+- CS & DSS
+  - Found the threshold value of reconciliation efficiency $b_{th}$ for DR/RR
+  - Developed code that produces MC data without SF 
+
+***
+
+## DSS QKD protocol
+
+***
+
+### Calculated the Holevo bound for DR/RR 
+
+The Holevo bound for the DSS protocol was calculated for both DR and RR. The same approach used for the CS protocol was applied, with the covariance matrices constructed according to the DSS protocol.
+
+***
+
+### Calculated the lower bound of the SKR for DR/RR and compared the results to literature
+
+The SKR was evaluated for different channel transmissions, modulation variances, and squeezing levels. The results were compared with the results reported in the reference paper and showed excellent agreement.
+
+In particular, squeezing was found to be a useful resource since  it seems to increase the SKR in some cases.
+
+
+***
+
+## CS & DSS
+
+***
+
+### Found the threshold value of reconciliation efficiency $b_{th}$ for DR/RR
+
+The threshold reconciliation efficiency was calculated to determine the minimum value of $b$ required to obtain a positive lower bound of the SKR for each value of $\eta$.
+
+The threshold values were calculated separately for DR and RR and compared between the CS and DSS protocols. This comparison identifies the regions where squeezing improves the SKR, is necessary to obtain a positive SKR, or provides no benefit.
+ 
+
+***
+
+### Developed code that produces MC data without SF 
+ 
+Since SF was time-consuming for generating MC data, another protocol without SF was developed that is faster. SF is a useful tool for initially understanding the underlying processes, as it provides a more intuitive way of implementing the protocol. However, once the underlying concepts are understood, other approaches can be used to generate the MC data more efficiently.
+
+
+## Next steps:
+
+- Organize/Optimize codes and prepare results in desired format
+- Report writing for the second part of the project
+- Final presentation for the second part of the project
 
