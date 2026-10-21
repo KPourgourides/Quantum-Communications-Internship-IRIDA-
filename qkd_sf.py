@@ -365,7 +365,7 @@ def holevo_RR_SF(eta, var_a, V, basis="x"):
 
 def cs_b_th(I_per_eta_dict_th, chix_per_eta_dict, eta_grid):
 
-    bs = np.linspace(0.0, 1, 2000)
+    bs = np.linspace(0.0, 1, 1000)
     low_b_cs=np.ones((len(eta_grid)))
 
     for i,eta_DR in enumerate(eta_grid):
@@ -374,7 +374,7 @@ def cs_b_th(I_per_eta_dict_th, chix_per_eta_dict, eta_grid):
         for b in bs:
             K_grid = key_rate(b, th_I_grid_x, th_chi_x_grid)
             max_value = np.nanmax(K_grid)
-            if max_value>=1e-3:
+            if max_value>0:
                 low_b_cs[i]=b
                 break
     return low_b_cs
@@ -382,7 +382,7 @@ def cs_b_th(I_per_eta_dict_th, chix_per_eta_dict, eta_grid):
 
 def b_th(I_per_eta_dict_th, chix_per_eta_dict, eta_grid):
 
-    bs = np.linspace(0.0, 1, 2000)
+    bs = np.linspace(0.0, 1, 1000)
     low_b = np.ones((len(eta_grid)))
 
     for i,eta_DR in enumerate(eta_grid):
@@ -392,7 +392,7 @@ def b_th(I_per_eta_dict_th, chix_per_eta_dict, eta_grid):
             K_grid = key_rate(b, th_I_grid_x, th_chi_x_grid)
             max_value = np.nanmax(K_grid)
             # we search for the max value above a threshold>0 since the negative keyrate curves also start at 0
-            if max_value>=1e-3: 
+            if max_value>0: 
                 low_b[i]=b
                 break
     return low_b
@@ -423,9 +423,15 @@ def plot_I_chi(eta_plot,  V_grid, var_a_grid, I_per_eta_dict_th, chix_per_eta_di
         th_I_grid_x = I_per_eta_dict_th[f'eta_{eta:.2f}']
         th_chi_x_grid = chix_per_eta_dict[f'eta_{eta:.2f}']
         I_grid_x = I_per_eta_dict_MC[f'eta_{eta:.2f}']
-
+        
         I_th_flat = np.asarray(th_I_grid_x).ravel()
         I_MC_flat = np.asarray(I_grid_x).ravel()
+
+        # Mask out all points where either value is NaN
+        mask = ~np.isnan(I_th_flat) & ~np.isnan(I_MC_flat)
+
+        I_th_flat = I_th_flat[mask]
+        I_MC_flat = I_MC_flat[mask]
 
         SS_res = np.sum((I_MC_flat - I_th_flat) ** 2)
         SS_tot = np.sum((I_MC_flat - np.mean(I_MC_flat)) ** 2)
@@ -477,9 +483,26 @@ def plot_K(b, eta_plot, var_a_grid, V_grid, I_per_eta_dict_th, I_per_eta_dict_MC
         th_chi_x_grid = chix_per_eta_dict[f'eta_{eta:.2f}']
         th_K = key_rate(b, th_I_grid_x, th_chi_x_grid)
 
+
         if MC:
             I_grid_x = I_per_eta_dict_MC[f'eta_{eta:.2f}']
             K = key_rate(b, I_grid_x, th_chi_x_grid)
+
+            th_K_flat = np.asarray(th_K).ravel()
+            K_flat = np.asarray(K).ravel()
+
+            # Mask out points where either value is NaN
+            mask = ~np.isnan(th_K_flat) & ~np.isnan(K_flat)
+
+            th_K_flat = th_K_flat[mask]
+            K_flat = K_flat[mask]
+            
+            SS_res = np.sum((K_flat - th_K_flat) ** 2)
+            SS_tot = np.sum((K_flat - np.mean(K_flat)) ** 2)
+            
+            R2 = 1 - SS_res / SS_tot
+            print(R2)
+
         V_mesh, var_a_mesh = np.meshgrid(V_grid, var_a_grid)
         fig.add_trace(go.Surface(x=V_grid, y=var_a_grid, z= th_K, surfacecolor=np.zeros_like(th_I_grid_x), colorscale=[[0.0, col2[f'eta_{eta:.2f}']], [1.0, col2[f'eta_{eta:.2f}']]], showscale=False))
         fig.add_trace(go.Surface(x=V_grid, y=var_a_grid, z=np.zeros((len(var_a_grid), len(V_grid))),  colorscale=[[0.0, 'black'], [1.0, 'black']], showscale=False))
@@ -488,6 +511,7 @@ def plot_K(b, eta_plot, var_a_grid, V_grid, I_per_eta_dict_th, I_per_eta_dict_MC
         fig.update_layout(scene=dict(xaxis_title="V", yaxis_title="V_a", zaxis = dict(title="K"), aspectmode ="cube"), width=900, height=750)
     fig.show()
     cmap(col2)
+    
 
 
 def plot_2D_chi_I_K(b, eta, V, var_a_grid, V_grid, I_per_eta_dict_th, I_per_eta_dict_MC, chix_per_eta_dict, MC=False):
@@ -527,17 +551,48 @@ def plot_2D_chi_I_K(b, eta, V, var_a_grid, V_grid, I_per_eta_dict_th, I_per_eta_
     plt.tight_layout()
 
 
-def plot_K_regions(eta_grid, I_per_eta_dict_th, I_per_eta_dict_MC, chix_per_eta_dict):
+def plot_K_regions(eta_grid, I_per_eta_dict_th, I_per_eta_dict_MC, chix_per_eta_dict, MC=False):
     fig = plt.figure(figsize=(8, 5), dpi=100)
     low_b = b_th(I_per_eta_dict_th, chix_per_eta_dict, eta_grid)
-    low_b_MC = b_th(I_per_eta_dict_MC, chix_per_eta_dict, eta_grid)
     low_b_cs = cs_b_th(I_per_eta_dict_th, chix_per_eta_dict, eta_grid)
-    low_b_cs_MC = cs_b_th(I_per_eta_dict_MC, chix_per_eta_dict, eta_grid)
 
-    plt.plot(eta_grid, low_b, '--', color='k', linewidth=2)
-    plt.plot(eta_grid, low_b_MC, 'o', color='k')
+    if MC:
+        low_b_cs_MC = cs_b_th(I_per_eta_dict_MC, chix_per_eta_dict, eta_grid)
+        low_b_MC = b_th(I_per_eta_dict_MC, chix_per_eta_dict, eta_grid)
+
+        plt.plot(eta_grid, low_b_MC, 'o', markersize=4, color='k')
+        plt.plot(eta_grid, low_b_cs_MC, 'o', markersize=4, color='k')
+
+        cs_th = np.asarray(low_b_cs[1:]).ravel()
+        cs = np.asarray(low_b_cs_MC[1:]).ravel()
+
+        # Mask out points where either value is NaN
+        mask = ~np.isnan(cs_th) & ~np.isnan(cs)
+        cs_th_flat = cs_th[mask]
+        cs_flat = cs[mask]
+        
+        SS_res = np.sum((cs_flat - cs_th_flat) ** 2)
+        SS_tot = np.sum((cs_flat - np.mean(cs_flat)) ** 2)
+        
+        R2 = 1 - SS_res / SS_tot
+        print(R2)
+
+        cs_th = np.asarray(low_b[1:]).ravel()
+        cs = np.asarray(low_b_MC[1:]).ravel()
+
+        # Mask out points where either value is NaN
+        mask = ~np.isnan(cs_th) & ~np.isnan(cs)
+        cs_th_flat = cs_th[mask]
+        cs_flat = cs[mask]
+        
+        SS_res = np.sum((cs_flat - cs_th_flat) ** 2)
+        SS_tot = np.sum((cs_flat - np.mean(cs_flat)) ** 2)
+        
+        R2 = 1 - SS_res / SS_tot
+        print(R2)
+
+    plt.plot(eta_grid, low_b, '-', color='k', linewidth=2)
     plt.plot(eta_grid, low_b_cs, '--', color='k', linewidth=2)
-    plt.plot(eta_grid, low_b_cs_MC, 'o', color='k')
     plt.fill_between(eta_grid, low_b, low_b_cs, color='gold', alpha=0.6, label='Squeezing Necessary')
     plt.fill_between(eta_grid, low_b_cs, 1, color='green', alpha=0.6, label='Squeezing Beneficial')
     plt.fill_between(eta_grid, low_b, 0, color='red', alpha=0.6, label='Squeezing not Beneficial')
